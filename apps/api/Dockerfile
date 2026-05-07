@@ -1,12 +1,12 @@
 # Build context is the repo root (see docker-compose.yml). All paths below
-# are therefore relative to /InterviewGPT.
+# are therefore relative to the repo root.
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
-# Install uv (fast Python package manager)
+# uv = fast Python package manager
 RUN pip install --upgrade pip && pip install uv
 
 WORKDIR /app
@@ -26,9 +26,11 @@ COPY data/seeds /app/data/seeds
 
 # ChromaDB persistence path (mount a volume to keep across deploys)
 ENV CHROMA_PERSIST_DIR=/app/chroma_data \
-    SEEDS_DIR=/app/data/seeds
+    SEEDS_DIR=/app/data/seeds \
+    PORT=8000
 RUN mkdir -p /app/chroma_data
 
 EXPOSE 8000
 
-CMD ["/app/.venv/bin/uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use shell form so $PORT is expanded (Railway/Render/Fly inject PORT at runtime).
+CMD /app/.venv/bin/uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}

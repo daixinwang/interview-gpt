@@ -1,0 +1,21 @@
+# Keep image lean and avoid invalidating the dependency layer on every commit.
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/chroma_data
+**/.env
+**/.env.*
+.git
+.github
+.idea
+.vscode
+.DS_Store
+README.md
+README.zh-CN.md
+docs
