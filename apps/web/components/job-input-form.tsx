@@ -12,6 +12,7 @@ import { PROVIDERS } from "@/lib/models";
 import { Lang, t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import { startInterview } from "@/lib/api-client";
+import { extractPdfText } from "@/lib/pdf";
 
 interface Props {
   lang: Lang;
@@ -23,6 +24,7 @@ export function JobInputForm({ lang }: Props) {
   const [jd, setJd] = useState("");
   const [resume, setResume] = useState("");
   const [resumeFile, setResumeFile] = useState<string | null>(null);
+  const [parsing, setParsing] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [providerId, setProviderId] = useState<string>(PROVIDERS[0].id);
   const [model, setModel] = useState("");
@@ -65,13 +67,24 @@ export function JobInputForm({ lang }: Props) {
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError(null);
+    setParsing(true);
     try {
-      const text = await file.text();
+      const isPdf =
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf");
+      const text = isPdf ? await extractPdfText(file) : await file.text();
+      if (!text.trim()) {
+        throw new Error(
+          "Could not extract any text from this file (it may be a scanned image PDF).",
+        );
+      }
       setResume(text);
       setResumeFile(file.name);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
+      setParsing(false);
       // Reset input so re-uploading the same file still fires onChange.
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -160,15 +173,18 @@ export function JobInputForm({ lang }: Props) {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              disabled={parsing}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-60"
             >
               <Upload className="h-3.5 w-3.5" />
-              {t(lang, "home.resume.upload")}
+              {parsing
+                ? t(lang, "home.resume.parsing")
+                : t(lang, "home.resume.upload")}
             </button>
             <input
               ref={fileRef}
               type="file"
-              accept=".txt,.md,text/plain,text/markdown"
+              accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
               className="hidden"
               onChange={onFile}
             />

@@ -16,7 +16,9 @@ const ZH: Dict = {
   "home.section.jd": "岗位 JD（粘贴 100-2000 字最佳）",
   "home.section.resume": "你的简历",
   "home.resume.upload": "上传文件",
-  "home.resume.upload.hint": "支持 .txt / .md（也可直接粘贴文本）",
+  "home.resume.parsing": "解析中…",
+  "home.resume.upload.hint":
+    "支持 .pdf / .txt / .md（PDF 在浏览器本地解析，不会上传文件本身；扫描版 PDF 暂不支持）",
   "home.resume.uploaded": "已加载",
   "home.section.apikey": "API Key",
   "home.apikey.help":
@@ -73,7 +75,9 @@ const EN: Dict = {
   "home.section.jd": "Job Description (paste 100-2000 words)",
   "home.section.resume": "Your Resume",
   "home.resume.upload": "Upload file",
-  "home.resume.upload.hint": "Supports .txt / .md (or paste plain text)",
+  "home.resume.parsing": "Parsing…",
+  "home.resume.upload.hint":
+    "Supports .pdf / .txt / .md (PDF is parsed locally in the browser — the file itself is never uploaded; scanned PDFs aren't supported)",
   "home.resume.uploaded": "Loaded",
   "home.section.apikey": "API Key",
   "home.apikey.help":
