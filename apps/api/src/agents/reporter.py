@@ -56,6 +56,7 @@ async def stream_report(
         system=system,
         user=user,
         max_tokens=2048,
+        base_url=state.base_url,
     ):
         yield chunk
 
@@ -68,5 +69,10 @@ async def complete_report(
 ) -> str:
     system, user = build_reporter_messages(state, language=language)
     return await complete_text(
-        api_key=api_key, model=state.model, system=system, user=user, max_tokens=2048
+        api_key=api_key,
+        model=state.model,
+        system=system,
+        user=user,
+        max_tokens=2048,
+        base_url=state.base_url,
     )

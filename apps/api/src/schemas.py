@@ -33,6 +33,7 @@ class StartRequest(BaseModel):
     jd: str
     resume: str
     model: str | None = None  # falls back to settings.anthropic_model
+    base_url: str | None = None  # optional Anthropic-compatible proxy URL
 
 
 class StartResponse(BaseModel):
@@ -64,6 +65,7 @@ class InterviewState(BaseModel):
     jd: str
     resume: str
     model: str = "claude-sonnet-4-6"
+    base_url: str | None = None  # optional override for Anthropic-compatible proxies
 
     stage: Stage = "opening"
     rounds: list[Round] = Field(default_factory=list)

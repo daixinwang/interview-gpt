@@ -63,6 +63,7 @@ async def start(req: StartRequest) -> StartResponse:
             "jd": req.jd,
             "resume": req.resume,
             "model": _resolve_model(req.model),
+            "base_url": (req.base_url.strip() if req.base_url else None) or None,
         }
     )
     logger.info(

@@ -132,6 +132,7 @@ async def stream_question(
         system=system,
         user=user,
         max_tokens=600,
+        base_url=state.base_url,
     ):
         yield chunk
 
@@ -155,5 +156,10 @@ async def complete_question(
         language=language,
     )
     return await complete_text(
-        api_key=api_key, model=state.model, system=system, user=user, max_tokens=600
+        api_key=api_key,
+        model=state.model,
+        system=system,
+        user=user,
+        max_tokens=600,
+        base_url=state.base_url,
     )

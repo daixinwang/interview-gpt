@@ -59,6 +59,7 @@ async def evaluate_round(
         system=system,
         user=user,
         max_tokens=512,
+        base_url=state.base_url,
     )
     return _coerce(raw)
 

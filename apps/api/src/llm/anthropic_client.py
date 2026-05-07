@@ -20,11 +20,17 @@ logger = logging.getLogger(__name__)
 DEFAULT_MAX_TOKENS = 2048
 
 
-def make_client(api_key: str) -> AsyncAnthropic:
-    """Build an AsyncAnthropic client from a per-request BYOK key."""
+def make_client(api_key: str, base_url: str | None = None) -> AsyncAnthropic:
+    """Build an AsyncAnthropic client from a per-request BYOK key.
+
+    `base_url` lets a user point at a proxy or self-hosted Anthropic-compatible
+    endpoint without code changes."""
     if not api_key or not api_key.strip():
         raise ValueError("Anthropic API key is required (X-Anthropic-Key header).")
-    return AsyncAnthropic(api_key=api_key)
+    kwargs: dict = {"api_key": api_key}
+    if base_url and base_url.strip():
+        kwargs["base_url"] = base_url.strip()
+    return AsyncAnthropic(**kwargs)
 
 
 async def complete_text(
@@ -34,9 +40,10 @@ async def complete_text(
     system: str,
     user: str,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    base_url: str | None = None,
 ) -> str:
     """Single-shot text completion. Returns the assistant text."""
-    client = make_client(api_key)
+    client = make_client(api_key, base_url=base_url)
     response = await client.messages.create(
         model=model,
         max_tokens=max_tokens,
@@ -53,6 +60,7 @@ async def complete_json(
     system: str,
     user: str,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    base_url: str | None = None,
 ) -> dict:
     """Like complete_text, but parses the response as JSON.
 
@@ -60,7 +68,12 @@ async def complete_json(
     if the response cannot be parsed.
     """
     raw = await complete_text(
-        api_key=api_key, model=model, system=system, user=user, max_tokens=max_tokens
+        api_key=api_key,
+        model=model,
+        system=system,
+        user=user,
+        max_tokens=max_tokens,
+        base_url=base_url,
     )
     cleaned = _strip_code_fence(raw)
     try:
@@ -77,9 +90,10 @@ async def stream_text(
     system: str,
     user: str,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    base_url: str | None = None,
 ) -> AsyncIterator[str]:
     """Async generator yielding text deltas as the model writes them."""
-    client = make_client(api_key)
+    client = make_client(api_key, base_url=base_url)
     async with client.messages.stream(
         model=model,
         max_tokens=max_tokens,
