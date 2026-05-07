@@ -15,6 +15,7 @@ export interface StartArgs {
   jd: string;
   resume: string;
   model?: string;
+  baseUrl?: string;
 }
 
 export interface RoundDTO {
@@ -63,6 +64,7 @@ export async function startInterview(
       jd: args.jd,
       resume: args.resume,
       model: args.model,
+      base_url: args.baseUrl,
     }),
   });
   if (!r.ok) throw new Error(`start failed: ${r.status} ${await r.text()}`);

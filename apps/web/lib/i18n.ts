@@ -14,10 +14,17 @@ const ZH: Dict = {
   "home.cta.start": "开始模拟面试",
   "home.section.job": "目标岗位",
   "home.section.jd": "岗位 JD（粘贴 100-2000 字最佳）",
-  "home.section.resume": "你的简历摘要",
-  "home.section.apikey": "Anthropic API Key",
+  "home.section.resume": "你的简历",
+  "home.resume.upload": "上传文件",
+  "home.resume.upload.hint": "支持 .txt / .md（也可直接粘贴文本）",
+  "home.resume.uploaded": "已加载",
+  "home.section.apikey": "API Key",
   "home.apikey.help":
-    "你的 key 仅保存在浏览器 localStorage，每次请求通过 X-Anthropic-Key 头发到后端，永不持久化。",
+    "你的 key 仅保存在浏览器 localStorage,每次请求通过 X-Anthropic-Key 头发到后端,永不持久化。",
+  "home.advanced.toggle": "高级选项",
+  "home.section.model": "模型",
+  "home.section.baseurl": "Base URL（可选）",
+  "home.placeholder.baseurl": "https://api.anthropic.com（默认）",
   "home.placeholder.jd": "我们正在招聘高级前端工程师，需要……",
   "home.placeholder.resume": "5 年 React 经验，在 X 公司主导设计系统建设……",
   "home.placeholder.apikey": "sk-ant-...",
@@ -39,7 +46,7 @@ const ZH: Dict = {
   "interview.placeholder": "用语音或文字回答（Cmd/Ctrl+Enter 发送）",
   "interview.send": "发送回答",
   "interview.finish": "生成报告",
-  "interview.error.apikey": "需要先配置 Anthropic API Key",
+  "interview.error.apikey": "需要先配置 API Key",
   "interview.report_ready": "面试已完成，点击生成报告",
 
   "report.title": "面试评估报告",
@@ -62,10 +69,17 @@ const EN: Dict = {
   "home.cta.start": "Start Mock Interview",
   "home.section.job": "Target Role",
   "home.section.jd": "Job Description (paste 100-2000 words)",
-  "home.section.resume": "Resume Summary",
-  "home.section.apikey": "Anthropic API Key",
+  "home.section.resume": "Your Resume",
+  "home.resume.upload": "Upload file",
+  "home.resume.upload.hint": "Supports .txt / .md (or paste plain text)",
+  "home.resume.uploaded": "Loaded",
+  "home.section.apikey": "API Key",
   "home.apikey.help":
     "Your key is stored only in browser localStorage and sent via X-Anthropic-Key per request — never persisted server-side.",
+  "home.advanced.toggle": "Advanced",
+  "home.section.model": "Model",
+  "home.section.baseurl": "Base URL (optional)",
+  "home.placeholder.baseurl": "https://api.anthropic.com (default)",
   "home.placeholder.jd":
     "We are hiring a Senior Frontend Engineer. Required: deep React expertise...",
   "home.placeholder.resume":
@@ -89,7 +103,7 @@ const EN: Dict = {
   "interview.placeholder": "Type your answer (Cmd/Ctrl+Enter to send)",
   "interview.send": "Send Answer",
   "interview.finish": "Generate Report",
-  "interview.error.apikey": "Please set your Anthropic API Key first",
+  "interview.error.apikey": "Please set your API Key first",
   "interview.report_ready":
     "Interview complete. Click to generate the report.",
 

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { JOBS, jobLabel } from "@/lib/jobs";
+import { MODEL_PRESETS } from "@/lib/models";
 import { Lang, t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import { startInterview } from "@/lib/api-client";
@@ -20,13 +22,35 @@ export function JobInputForm({ lang }: Props) {
   const [jobId, setJobId] = useState("frontend");
   const [jd, setJd] = useState("");
   const [resume, setResume] = useState("");
+  const [resumeFile, setResumeFile] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setApiKey(storage.getApiKey());
+    setModel(storage.getModel());
+    setBaseUrl(storage.getBaseUrl());
   }, []);
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setResume(text);
+      setResumeFile(file.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      // Reset input so re-uploading the same file still fires onChange.
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +62,8 @@ export function JobInputForm({ lang }: Props) {
     if (!jd.trim() || !resume.trim()) return;
 
     storage.setApiKey(apiKey.trim());
+    storage.setModel(model.trim());
+    storage.setBaseUrl(baseUrl.trim());
     setSubmitting(true);
     try {
       const job = JOBS.find((j) => j.id === jobId)!;
@@ -46,6 +72,8 @@ export function JobInputForm({ lang }: Props) {
         jobTitle: jobLabel(job, lang),
         jd: jd.trim(),
         resume: resume.trim(),
+        model: model.trim() || undefined,
+        baseUrl: baseUrl.trim() || undefined,
       });
       storage.upsertSession({
         sessionId: session_id,
@@ -96,15 +124,46 @@ export function JobInputForm({ lang }: Props) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="resume">{t(lang, "home.section.resume")}</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="resume">{t(lang, "home.section.resume")}</Label>
+          <div className="flex items-center gap-2">
+            {resumeFile && (
+              <span className="text-xs text-muted-foreground">
+                {t(lang, "home.resume.uploaded")}: {resumeFile}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {t(lang, "home.resume.upload")}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".txt,.md,text/plain,text/markdown"
+              className="hidden"
+              onChange={onFile}
+            />
+          </div>
+        </div>
         <Textarea
           id="resume"
           rows={5}
           value={resume}
-          onChange={(e) => setResume(e.target.value)}
+          onChange={(e) => {
+            setResume(e.target.value);
+            // If user manually edits, drop the file label.
+            if (resumeFile) setResumeFile(null);
+          }}
           placeholder={t(lang, "home.placeholder.resume")}
           required
         />
+        <p className="text-xs text-muted-foreground">
+          {t(lang, "home.resume.upload.hint")}
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -120,6 +179,56 @@ export function JobInputForm({ lang }: Props) {
         <p className="text-xs text-muted-foreground">
           {t(lang, "home.apikey.help")}
         </p>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {advancedOpen ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+          {t(lang, "home.advanced.toggle")}
+        </button>
+
+        {advancedOpen && (
+          <div className="space-y-4 rounded-md border border-border bg-muted/30 p-4">
+            <div className="space-y-2">
+              <Label htmlFor="model">{t(lang, "home.section.model")}</Label>
+              <select
+                id="model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                {MODEL_PRESETS.map((m) => (
+                  <option key={m.id || "default"} value={m.id}>
+                    {m.label}
+                    {m.id ? `  (${m.id})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="baseurl">
+                {t(lang, "home.section.baseurl")}
+              </Label>
+              <Input
+                id="baseurl"
+                type="url"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder={t(lang, "home.placeholder.baseurl")}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {error && (

@@ -6,6 +6,8 @@
 const KEY_API = "igpt:anthropic-key";
 const KEY_SESSIONS = "igpt:sessions";
 const KEY_LANGUAGE = "igpt:lang";
+const KEY_BASE_URL = "igpt:base-url";
+const KEY_MODEL = "igpt:model";
 
 export interface SavedSession {
   sessionId: string;
@@ -37,6 +39,26 @@ export const storage = {
   setLanguage(value: "zh" | "en") {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(KEY_LANGUAGE, value);
+  },
+
+  getBaseUrl(): string {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(KEY_BASE_URL) || "";
+  },
+  setBaseUrl(value: string) {
+    if (typeof window === "undefined") return;
+    if (!value) window.localStorage.removeItem(KEY_BASE_URL);
+    else window.localStorage.setItem(KEY_BASE_URL, value);
+  },
+
+  getModel(): string {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(KEY_MODEL) || "";
+  },
+  setModel(value: string) {
+    if (typeof window === "undefined") return;
+    if (!value) window.localStorage.removeItem(KEY_MODEL);
+    else window.localStorage.setItem(KEY_MODEL, value);
   },
 
   listSessions(): SavedSession[] {
