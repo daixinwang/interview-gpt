@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { LangToggle } from "@/components/lang-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Lang, t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import { fetchState, streamSse, sseUrls } from "@/lib/api-client";
@@ -108,7 +109,10 @@ export default function ReportPage({ params }: PageProps) {
           ← {t(lang, "report.back")}
         </button>
         <h1 className="text-lg font-semibold">{t(lang, "report.title")}</h1>
-        <LangToggle lang={lang} onChange={onLangChange} />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LangToggle lang={lang} onChange={onLangChange} />
+        </div>
       </header>
 
       <div className="mt-6 flex flex-wrap gap-2">

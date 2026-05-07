@@ -6,6 +6,7 @@ import { ChatBubble } from "@/components/chat-bubble";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { LangToggle } from "@/components/lang-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Lang, t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import {
@@ -256,7 +257,10 @@ export default function InterviewPage({ params }: PageProps) {
         <div className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           {t(lang, `interview.stage.${stage}`)}
         </div>
-        <LangToggle lang={lang} onChange={onLangChange} />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LangToggle lang={lang} onChange={onLangChange} />
+        </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto py-6">
