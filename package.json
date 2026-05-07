@@ -1,0 +1,27 @@
+{
+  "name": "interview-gpt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Interviewer Agent - your AI mock interview coach with personality",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "api:dev": "cd apps/api && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+    "api:install": "cd apps/api && uv sync",
+    "seeds:generate": "tsx scripts/generate-seeds.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "@anthropic-ai/sdk": "^0.95.0",
+    "dotenv": "^16.4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
