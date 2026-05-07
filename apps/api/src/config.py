@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     api_port: int = 8000
     cors_origins: str = "http://localhost:3000"
     chroma_persist_dir: str = "./chroma_data"
+    # Directory containing jobs.json and questions/*.json. Defaults to the
+    # data/seeds directory at the repo root (two levels up from apps/api).
+    seeds_dir: str = "../../data/seeds"
     embedding_model: str | None = None
     anthropic_model: str = "claude-sonnet-4-6"
     # Optional server-side fallback. Leave empty to enforce BYOK.

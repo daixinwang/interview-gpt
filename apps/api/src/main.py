@@ -1,18 +1,27 @@
 """FastAPI entrypoint for the InterviewGPT backend."""
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
+from src.rag.seeder import seed_collection
 from src.routes import health, interview
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Place startup hooks here (e.g. ChromaDB seeding) once those modules land.
+    try:
+        inserted = seed_collection(fresh=False)
+        logger.info("ChromaDB seeding finished. Inserted/upserted %d documents.", inserted)
+    except Exception:
+        logger.exception("ChromaDB seeding failed; the app will still start.")
     yield
 
 

@@ -1,3 +1,5 @@
+# Build context is the repo root (see docker-compose.yml). All paths below
+# are therefore relative to /InterviewGPT.
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -10,17 +12,21 @@ RUN pip install --upgrade pip && pip install uv
 WORKDIR /app
 
 # Copy dependency manifests first for better layer caching
-COPY pyproject.toml ./
-COPY README.md ./
+COPY apps/api/pyproject.toml ./
+COPY apps/api/README.md ./
 
 # Sync dependencies into a virtualenv at /app/.venv
 RUN uv venv && uv sync --no-dev
 
 # Copy source
-COPY src ./src
+COPY apps/api/src ./src
+
+# Copy seed data into the image. The container resolves seeds via SEEDS_DIR.
+COPY data/seeds /app/data/seeds
 
 # ChromaDB persistence path (mount a volume to keep across deploys)
-ENV CHROMA_PERSIST_DIR=/app/chroma_data
+ENV CHROMA_PERSIST_DIR=/app/chroma_data \
+    SEEDS_DIR=/app/data/seeds
 RUN mkdir -p /app/chroma_data
 
 EXPOSE 8000
