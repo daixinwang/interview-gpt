@@ -1,0 +1,110 @@
+[
+  {
+    "id": "be-001",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "database",
+    "question": "Your team's main Postgres table is 200M rows and a critical query just slowed down 10x overnight. Walk me through your debug process.",
+    "key_points": [
+      "EXPLAIN ANALYZE first",
+      "index bloat / vacuum / analyze",
+      "statistics staleness",
+      "plan flip due to data distribution change",
+      "lock contention / autovacuum"
+    ],
+    "follow_ups": [
+      "What if the plan is right but it's still slow?",
+      "How would you avoid this happening at 3am next time?"
+    ]
+  },
+  {
+    "id": "be-002",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "concurrency",
+    "question": "Explain the difference between optimistic and pessimistic locking with a real scenario where you'd choose each.",
+    "key_points": [
+      "optimistic: version column / CAS, low conflict workloads",
+      "pessimistic: SELECT FOR UPDATE, high conflict",
+      "deadlock implications",
+      "retry strategies & backoff",
+      "isolation levels interaction"
+    ],
+    "follow_ups": [
+      "If you pick optimistic and conflicts spike to 30%, what do you do?",
+      "How does this interact with read replica lag?"
+    ]
+  },
+  {
+    "id": "be-003",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "caching",
+    "question": "Walk me through cache invalidation strategies for a product catalog that's read 100x more than written.",
+    "key_points": [
+      "TTL vs event-driven invalidation",
+      "cache-aside vs write-through vs write-back",
+      "stale-while-revalidate",
+      "the thundering herd problem",
+      "negative caching"
+    ],
+    "follow_ups": [
+      "How do you handle an inventory count that has to be near-real-time?",
+      "What goes wrong if Redis goes down for 5 minutes?"
+    ]
+  },
+  {
+    "id": "be-004",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "distributed-systems",
+    "question": "You're building a distributed job queue. How do you guarantee a job runs exactly once?",
+    "key_points": [
+      "exactly-once is unattainable end-to-end; aim for at-least-once + idempotency",
+      "idempotency keys",
+      "transactional outbox",
+      "consumer offset semantics (Kafka)",
+      "dedup window vs storage cost"
+    ],
+    "follow_ups": [
+      "Show me what 'idempotent' means at the database layer.",
+      "How do you handle a job that's been picked up but the worker died?"
+    ]
+  },
+  {
+    "id": "be-005",
+    "stage": "project",
+    "difficulty": "senior",
+    "topic": "system-design",
+    "question": "Design a URL shortener that needs to handle 100k QPS read with sub-50ms p99 latency.",
+    "key_points": [
+      "key generation: counter / hash / collision strategy",
+      "read path: in-memory cache + DB fallback",
+      "DB choice: KV vs RDBMS",
+      "geo distribution",
+      "analytics pipeline (async)"
+    ],
+    "follow_ups": [
+      "What's the smallest cache size you can get away with for the hot tier?",
+      "How would you migrate the key space if you outgrew base62 7-char keys?"
+    ]
+  },
+  {
+    "id": "be-006",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "api-design",
+    "question": "When would you choose gRPC over REST? Give me criteria, not just 'gRPC is faster'.",
+    "key_points": [
+      "internal vs external APIs",
+      "streaming requirements",
+      "schema enforcement & versioning",
+      "polyglot client support",
+      "browser support / proxying overhead"
+    ],
+    "follow_ups": [
+      "How do you version a gRPC service?",
+      "What did you give up by choosing protobuf?"
+    ]
+  }
+]

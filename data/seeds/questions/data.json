@@ -1,0 +1,111 @@
+[
+  {
+    "id": "de-001",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "data-modeling",
+    "question": "Walk me through the difference between a star schema and a snowflake schema. When does each win?",
+    "key_points": [
+      "star: denormalized dimensions, fewer joins, faster queries",
+      "snowflake: normalized, less redundancy, harder to query",
+      "storage cost vs query cost tradeoff",
+      "BI tool ergonomics",
+      "modern columnar engines blur the lines"
+    ],
+    "follow_ups": [
+      "If you're on Snowflake/BigQuery with infinite columnar storage, does normalization still matter?",
+      "Show me a slowly changing dimension you'd model as Type 2."
+    ]
+  },
+  {
+    "id": "de-002",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "pipelines",
+    "question": "Your nightly ETL has been silently producing wrong numbers for a week. How would you build a system that catches this next time?",
+    "key_points": [
+      "data quality framework: Great Expectations / dbt tests",
+      "row count anomaly detection",
+      "freshness SLAs",
+      "schema drift detection",
+      "data lineage for blast radius"
+    ],
+    "follow_ups": [
+      "What's the difference between a 'test' and a 'check'?",
+      "Who gets paged at 3am, and what's in the runbook?"
+    ]
+  },
+  {
+    "id": "de-003",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "batch-vs-streaming",
+    "question": "When would you choose streaming over batch? And when is batch the smart, boring answer?",
+    "key_points": [
+      "latency requirements",
+      "operational complexity of streaming",
+      "exactly-once semantics overhead",
+      "watermarks & late data",
+      "cost: streaming compute always-on vs batch bursty"
+    ],
+    "follow_ups": [
+      "How would you migrate a batch pipeline to streaming without breaking downstream consumers?",
+      "What's the failure mode of streaming that batch handles trivially?"
+    ]
+  },
+  {
+    "id": "de-004",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "performance",
+    "question": "A Spark job that used to run in 30 minutes now takes 4 hours. Walk me through your debug.",
+    "key_points": [
+      "Spark UI: stage / task time, shuffle read/write",
+      "data skew detection",
+      "small files problem",
+      "broadcast join opportunity missed",
+      "partition strategy"
+    ],
+    "follow_ups": [
+      "What does 'skew' look like in the Spark UI?",
+      "How would you fix a skew on a join key you can't change?"
+    ]
+  },
+  {
+    "id": "de-005",
+    "stage": "project",
+    "difficulty": "senior",
+    "topic": "system-design",
+    "question": "Design the data platform for a product with 1B daily events that needs both analytics dashboards and ML feature pipelines.",
+    "key_points": [
+      "ingest: Kafka / Kinesis",
+      "storage: data lake (S3 + Iceberg/Delta) vs warehouse",
+      "lakehouse pattern",
+      "metrics layer / semantic models",
+      "feature store",
+      "cost controls"
+    ],
+    "follow_ups": [
+      "How do you keep analytics and ML features consistent?",
+      "What's the first thing you'd cut if budget got halved?"
+    ]
+  },
+  {
+    "id": "de-006",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "sql",
+    "question": "Write me a SQL query that finds users whose 7-day rolling average session count dropped by more than 50% week-over-week.",
+    "key_points": [
+      "window functions (AVG OVER ROWS BETWEEN)",
+      "self-join or LAG for week-over-week",
+      "handling users with zero sessions in some weeks",
+      "performance: avoid full table scan if possible",
+      "edge cases: new users / churned users"
+    ],
+    "follow_ups": [
+      "How does this query degrade as the table grows to 1B rows?",
+      "What's the cheapest way to materialize this for a daily dashboard?"
+    ]
+  }
+]

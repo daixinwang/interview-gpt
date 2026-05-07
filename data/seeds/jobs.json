@@ -1,0 +1,67 @@
+[
+  {
+    "id": "frontend",
+    "title_en": "Frontend Engineer",
+    "title_zh": "前端工程师",
+    "stack": ["JavaScript", "TypeScript", "React", "Next.js", "CSS", "Web Performance"],
+    "focus_areas": [
+      "browser internals",
+      "React rendering & state",
+      "performance & web vitals",
+      "build tooling",
+      "accessibility"
+    ]
+  },
+  {
+    "id": "backend",
+    "title_en": "Backend Engineer",
+    "title_zh": "后端工程师",
+    "stack": ["Go", "Java", "Python", "PostgreSQL", "Redis", "Kafka", "gRPC"],
+    "focus_areas": [
+      "API & service design",
+      "data modeling & query optimization",
+      "concurrency & consistency",
+      "caching strategies",
+      "observability"
+    ]
+  },
+  {
+    "id": "algorithm",
+    "title_en": "Algorithm Engineer",
+    "title_zh": "算法工程师",
+    "stack": ["Python", "PyTorch", "NumPy", "Pandas", "ML/DL fundamentals"],
+    "focus_areas": [
+      "data structures & complexity",
+      "ML model training & evaluation",
+      "feature engineering",
+      "production ML pipelines",
+      "experiment design"
+    ]
+  },
+  {
+    "id": "product",
+    "title_en": "Product Manager",
+    "title_zh": "产品经理",
+    "stack": ["product sense", "user research", "data analysis", "PRD writing"],
+    "focus_areas": [
+      "problem definition",
+      "user segmentation & personas",
+      "metrics design (north star, guardrails)",
+      "prioritization (RICE / impact)",
+      "cross-functional execution"
+    ]
+  },
+  {
+    "id": "data",
+    "title_en": "Data Engineer",
+    "title_zh": "数据工程师",
+    "stack": ["SQL", "Python", "Spark", "Airflow", "data warehouse (Snowflake/BigQuery)"],
+    "focus_areas": [
+      "data modeling (star schema, SCD)",
+      "ETL/ELT pipelines",
+      "batch vs streaming",
+      "data quality & lineage",
+      "performance & cost optimization"
+    ]
+  }
+]

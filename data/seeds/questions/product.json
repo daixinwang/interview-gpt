@@ -1,0 +1,110 @@
+[
+  {
+    "id": "pm-001",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "product-sense",
+    "question": "How would you improve Google Maps? I don't want a feature list — I want to see your structured thinking.",
+    "key_points": [
+      "clarify scope: Maps app vs platform vs both",
+      "user segmentation (commuter, tourist, driver, walker)",
+      "identify pain points by segment",
+      "prioritize by impact x feasibility",
+      "metric to validate"
+    ],
+    "follow_ups": [
+      "Pick your highest-priority idea. What metric tells you it worked, and what would falsify it?",
+      "What's a reason this idea would fail that you haven't mentioned?"
+    ]
+  },
+  {
+    "id": "pm-002",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "metrics",
+    "question": "Define the north star metric for a B2B SaaS collaboration product like Notion. Defend your choice against 2 alternatives.",
+    "key_points": [
+      "leading vs lagging indicators",
+      "tying NSM to value delivered, not just usage",
+      "WAU / MAU vs activation depth",
+      "guardrail metrics (churn, NPS, retention by cohort)",
+      "alignment with revenue but not equal to it"
+    ],
+    "follow_ups": [
+      "If your NSM and revenue diverge for a quarter, which do you trust?",
+      "How do you avoid Goodhart's law on this metric?"
+    ]
+  },
+  {
+    "id": "pm-003",
+    "stage": "project",
+    "difficulty": "senior",
+    "topic": "case-study",
+    "question": "Tell me about a feature you killed. Why? Walk me through the decision and what you learned.",
+    "key_points": [
+      "concrete data behind the decision",
+      "stakeholder management",
+      "sunk cost vs forward-looking framing",
+      "communication to users",
+      "what you'd do differently"
+    ],
+    "follow_ups": [
+      "Who pushed back hardest, and how did you handle it?",
+      "Looking back, was killing it the right call?"
+    ]
+  },
+  {
+    "id": "pm-004",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "prioritization",
+    "question": "Engineering can ship 5 things this quarter. You have 12 candidates. Walk me through your prioritization framework.",
+    "key_points": [
+      "RICE / ICE / impact-effort matrix",
+      "strategic alignment vs opportunistic wins",
+      "tech debt as first-class candidate",
+      "dependency / sequencing",
+      "leaving slack for unknowns"
+    ],
+    "follow_ups": [
+      "How do you handle a CEO override of your prioritization?",
+      "What's a candidate you'd kill outright, not deprioritize?"
+    ]
+  },
+  {
+    "id": "pm-005",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "user-research",
+    "question": "Your engagement metrics are flat for the last 6 months. How do you find out why?",
+    "key_points": [
+      "quantitative first: cohort analysis, funnel breakdown",
+      "qualitative: user interviews, support tickets",
+      "competitor / market context",
+      "look at users who DID engage and ask why",
+      "specific hypothesis before deciding to ship"
+    ],
+    "follow_ups": [
+      "Five users hate the new onboarding. Should you change it?",
+      "What's the difference between 'flat engagement' and 'product-market fit slipping'?"
+    ]
+  },
+  {
+    "id": "pm-006",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "execution",
+    "question": "Eng tells you the feature you scoped will take 3x longer than estimated. What do you do?",
+    "key_points": [
+      "understand root cause (scope creep / technical surprise / unclear spec)",
+      "scope reduction options",
+      "communication to stakeholders",
+      "rebuilding trust if pattern repeats",
+      "decision rights between PM and eng"
+    ],
+    "follow_ups": [
+      "How would you have caught this earlier?",
+      "If eng tells you again next month, what changes?"
+    ]
+  }
+]

@@ -1,0 +1,110 @@
+[
+  {
+    "id": "al-001",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "ml-fundamentals",
+    "question": "Explain the bias-variance tradeoff. Then give me a concrete example from a model you've actually shipped where you had to tune it.",
+    "key_points": [
+      "high bias = underfit; high variance = overfit",
+      "regularization / dropout / early stopping",
+      "ensembling reduces variance",
+      "more data reduces variance but not bias",
+      "training-validation gap as diagnostic"
+    ],
+    "follow_ups": [
+      "If your model is overfitting, why might 'just collect more data' be the wrong answer?",
+      "How does this play out for a deep transformer vs a gradient-boosted tree?"
+    ]
+  },
+  {
+    "id": "al-002",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "transformers",
+    "question": "Walk me through self-attention. I want the math, not the analogy.",
+    "key_points": [
+      "Q, K, V projections from input",
+      "scaled dot-product: softmax(QK^T / sqrt(d_k)) V",
+      "why scale by sqrt(d_k)",
+      "masking (causal vs padding)",
+      "multi-head: independent projections, concat"
+    ],
+    "follow_ups": [
+      "Why is attention quadratic in sequence length, and what have people done about it?",
+      "What does each head actually learn? Be specific about how you'd find out."
+    ]
+  },
+  {
+    "id": "al-003",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "evaluation",
+    "question": "Your binary classifier shows 95% accuracy on the test set. Why is that almost meaningless to me?",
+    "key_points": [
+      "class imbalance",
+      "precision/recall/F1 vs accuracy",
+      "PR-AUC vs ROC-AUC",
+      "cost-sensitive evaluation",
+      "calibration"
+    ],
+    "follow_ups": [
+      "When would ROC-AUC mislead you?",
+      "How would you set the decision threshold for a fraud detection model?"
+    ]
+  },
+  {
+    "id": "al-004",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "production-ml",
+    "question": "Your model performs well offline but degrades in production. List the failure modes you'd check, in order.",
+    "key_points": [
+      "training/serving skew (feature pipeline mismatch)",
+      "data distribution shift",
+      "label leakage in training",
+      "feedback loops",
+      "infrastructure (latency-induced timeouts)"
+    ],
+    "follow_ups": [
+      "How would you detect distribution shift without ground truth labels?",
+      "What's a real example of label leakage you've seen or could imagine?"
+    ]
+  },
+  {
+    "id": "al-005",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "data-structures",
+    "question": "Given a stream of integers, design a data structure to return the median at any point in O(log n) per insertion.",
+    "key_points": [
+      "two heaps: max-heap for lower half, min-heap for upper half",
+      "rebalance after each insert",
+      "median = top of either or average of both",
+      "O(log n) push, O(1) median",
+      "edge cases: even/odd count"
+    ],
+    "follow_ups": [
+      "What if the stream is windowed (last 1000 elements only)?",
+      "What if integers can be deleted?"
+    ]
+  },
+  {
+    "id": "al-006",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "experiment-design",
+    "question": "How would you A/B test a new ranking algorithm for a search engine?",
+    "key_points": [
+      "primary metric: query success / click-through with position bias correction",
+      "guardrails: latency, abandonment",
+      "interleaving as a stronger alternative",
+      "stratified analysis (head vs tail queries)",
+      "novelty effect / sample size"
+    ],
+    "follow_ups": [
+      "Why might the new algo win in A/B but lose long-term?",
+      "How would you handle a metric that's directional but not statistically significant?"
+    ]
+  }
+]

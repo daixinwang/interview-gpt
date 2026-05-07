@@ -1,0 +1,108 @@
+[
+  {
+    "id": "fe-001",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "react-rendering",
+    "question": "Walk me through what React does between calling setState and the user seeing pixels change. I want the full pipeline.",
+    "key_points": [
+      "scheduler & priority lanes",
+      "reconciliation / fiber tree diff",
+      "commit phase: DOM mutations + lifecycle / effects",
+      "browser paint",
+      "concurrent rendering vs legacy"
+    ],
+    "follow_ups": [
+      "Where exactly does useEffect fire in that pipeline, and why is it after commit?",
+      "If the user keeps clicking a button rapidly, how does React decide which renders to drop?"
+    ]
+  },
+  {
+    "id": "fe-002",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "performance",
+    "question": "A user reports your dashboard takes 6s to interactive on 4G. Walk me through how you'd diagnose and fix it.",
+    "key_points": [
+      "measure first: Lighthouse / WebPageTest / RUM",
+      "core web vitals: LCP, INP, CLS",
+      "bundle analysis & code splitting",
+      "image optimization (formats, lazy loading, srcset)",
+      "critical rendering path & SSR/streaming"
+    ],
+    "follow_ups": [
+      "If LCP is dominated by a hero image fetched from a third-party CDN, what are your options?",
+      "How would you decide between SSR, ISR, and CSR for this page?"
+    ]
+  },
+  {
+    "id": "fe-003",
+    "stage": "tech",
+    "difficulty": "senior",
+    "topic": "state-management",
+    "question": "When would you NOT use a global state library like Redux or Zustand? Give a concrete decision rule.",
+    "key_points": [
+      "server state vs client state distinction",
+      "React Query / SWR for server state",
+      "URL as state",
+      "Context API limits (re-render fan-out)",
+      "co-location principle"
+    ],
+    "follow_ups": [
+      "How would you migrate a Redux-heavy codebase to React Query without a big-bang rewrite?",
+      "Show me where Context becomes a footgun."
+    ]
+  },
+  {
+    "id": "fe-004",
+    "stage": "tech",
+    "difficulty": "mid",
+    "topic": "typescript",
+    "question": "Explain the practical difference between type and interface in TypeScript, and when you reach for each.",
+    "key_points": [
+      "declaration merging (interface only)",
+      "union/intersection support (type only)",
+      "performance & error message readability",
+      "team conventions"
+    ],
+    "follow_ups": [
+      "Write a generic type that extracts the return type of an async function.",
+      "What's a real bug you've shipped that better types would have caught?"
+    ]
+  },
+  {
+    "id": "fe-005",
+    "stage": "project",
+    "difficulty": "senior",
+    "topic": "system-design",
+    "question": "Design the frontend architecture for a real-time collaborative document editor (Google Docs style). Focus on the client side.",
+    "key_points": [
+      "CRDT vs OT for conflict resolution",
+      "WebSocket connection lifecycle & reconnection",
+      "presence cursors & throttling",
+      "offline / optimistic updates",
+      "rendering performance for large documents"
+    ],
+    "follow_ups": [
+      "What happens when two users delete the same paragraph at the same time?",
+      "How do you keep the editor responsive when the doc has 50k characters?"
+    ]
+  },
+  {
+    "id": "fe-006",
+    "stage": "tech",
+    "difficulty": "junior",
+    "topic": "css",
+    "question": "Compare flexbox and grid. When does each win?",
+    "key_points": [
+      "flex: 1D layout, content-out",
+      "grid: 2D layout, layout-in",
+      "responsive without media queries",
+      "common combo: grid for page, flex for components"
+    ],
+    "follow_ups": [
+      "Build me a holy-grail layout in CSS Grid in your head — describe the grid-template.",
+      "Why did flexbox fail at 2D layouts?"
+    ]
+  }
+]
