@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { JOBS, jobLabel } from "@/lib/jobs";
-import { MODEL_PRESETS } from "@/lib/models";
+import { PROVIDERS } from "@/lib/models";
 import { Lang, t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import { startInterview } from "@/lib/api-client";
@@ -24,18 +24,43 @@ export function JobInputForm({ lang }: Props) {
   const [resume, setResume] = useState("");
   const [resumeFile, setResumeFile] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
+  const [providerId, setProviderId] = useState<string>(PROVIDERS[0].id);
   const [model, setModel] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  const provider =
+    PROVIDERS.find((p) => p.id === providerId) || PROVIDERS[0];
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setApiKey(storage.getApiKey());
-    setModel(storage.getModel());
-    setBaseUrl(storage.getBaseUrl());
+    const savedModel = storage.getModel();
+    const savedBase = storage.getBaseUrl();
+    setModel(savedModel);
+    setBaseUrl(savedBase);
+    // Try to infer the provider from the saved base URL so the dropdown
+    // lands on the user's actual provider rather than the default.
+    if (savedBase) {
+      const match = PROVIDERS.find((p) => p.baseUrl === savedBase);
+      if (match) setProviderId(match.id);
+    }
+    // First-time visitors get the OpenAI default base URL pre-filled —
+    // less friction for the most common case.
+    if (!savedBase) setBaseUrl(PROVIDERS[0].baseUrl);
+    if (!savedModel) setModel(PROVIDERS[0].models[0].id);
   }, []);
+
+  const onProviderChange = (id: string) => {
+    setProviderId(id);
+    const next = PROVIDERS.find((p) => p.id === id);
+    if (!next) return;
+    setBaseUrl(next.baseUrl);
+    // Snap the model to the provider's first option to keep things consistent.
+    setModel(next.models[0].id);
+  };
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -198,35 +223,63 @@ export function JobInputForm({ lang }: Props) {
         {advancedOpen && (
           <div className="space-y-4 rounded-md border border-border bg-muted/30 p-4">
             <div className="space-y-2">
-              <Label htmlFor="model">{t(lang, "home.section.model")}</Label>
-              <select
-                id="model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                {MODEL_PRESETS.map((m) => (
-                  <option key={m.id || "default"} value={m.id}>
-                    {m.label}
-                    {m.id ? `  (${m.id})` : ""}
-                  </option>
+              <Label>{t(lang, "home.section.provider")}</Label>
+              <div className="flex flex-wrap gap-2">
+                {PROVIDERS.map((p) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => onProviderChange(p.id)}
+                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                      providerId === p.id
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background hover:bg-accent"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="baseurl">
-                {t(lang, "home.section.baseurl")}
-              </Label>
-              <Input
-                id="baseurl"
-                type="url"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder={t(lang, "home.placeholder.baseurl")}
-                autoComplete="off"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="model">{t(lang, "home.section.model")}</Label>
+                <select
+                  id="model"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {provider.models.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                  {/* Allow saved-but-unlisted custom IDs to remain selected. */}
+                  {model && !provider.models.some((m) => m.id === model) && (
+                    <option value={model}>{model}</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="baseurl">
+                  {t(lang, "home.section.baseurl")}
+                </Label>
+                <Input
+                  id="baseurl"
+                  type="url"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  placeholder={t(lang, "home.placeholder.baseurl")}
+                  autoComplete="off"
+                />
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {t(lang, "home.baseurl.help")}
+            </p>
           </div>
         )}
       </div>

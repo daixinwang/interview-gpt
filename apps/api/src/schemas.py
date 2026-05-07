@@ -32,8 +32,8 @@ class StartRequest(BaseModel):
     job_title: str = Field(..., description="Free-form title shown to the candidate")
     jd: str
     resume: str
-    model: str | None = None  # falls back to settings.anthropic_model
-    base_url: str | None = None  # optional Anthropic-compatible proxy URL
+    model: str | None = None  # falls back to settings.default_model
+    base_url: str | None = None  # optional OpenAI-compatible endpoint URL
 
 
 class StartResponse(BaseModel):
@@ -64,8 +64,8 @@ class InterviewState(BaseModel):
     job_title: str
     jd: str
     resume: str
-    model: str = "claude-sonnet-4-6"
-    base_url: str | None = None  # optional override for Anthropic-compatible proxies
+    model: str = "gpt-4o-mini"
+    base_url: str | None = None  # optional OpenAI-compatible endpoint URL
 
     stage: Stage = "opening"
     rounds: list[Round] = Field(default_factory=list)

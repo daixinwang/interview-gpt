@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 from src.agents import prompts
-from src.llm.anthropic_client import complete_text, stream_text
+from src.llm.llm_client import complete_text, stream_text
 from src.schemas import InterviewState
 
 

@@ -2,7 +2,7 @@
  * Thin wrapper around the FastAPI backend.
  *
  * SSE note: we cannot use the browser's native EventSource because it does
- * not support custom headers, and the backend requires `X-Anthropic-Key`.
+ * not support custom headers, and the backend requires `X-API-Key`.
  * Instead we use fetch + ReadableStream and parse SSE frames by hand.
  */
 
@@ -104,7 +104,7 @@ export async function streamSse(
     method: url.includes("/finish/") ? "POST" : "GET",
     headers: {
       Accept: "text/event-stream",
-      "X-Anthropic-Key": apiKey,
+      "X-API-Key": apiKey,
     },
     signal,
   });

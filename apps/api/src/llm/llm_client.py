@@ -1,9 +1,15 @@
-"""Thin wrappers around the Anthropic SDK.
+"""Thin wrappers around the OpenAI Python SDK.
+
+We use the OpenAI client as a *protocol adapter* — almost every modern LLM
+provider (OpenAI, Anthropic, DeepSeek, Qwen, Doubao, GLM, OpenRouter,
+Ollama, vLLM, etc.) exposes an OpenAI-compatible `/v1/chat/completions`
+endpoint, so a single client + the user-supplied `base_url` is enough to
+talk to any of them.
 
 The agent graph uses non-streaming `complete_json` for structured outputs
-(orchestrator decisions, evaluator scores, reporter sections). The route
-layer uses `stream_text` to deliver the interviewer's question and the
-final report token-by-token to the SSE client.
+(orchestrator decisions, evaluator scores). The route layer uses
+`stream_text` to deliver the interviewer's question and the final report
+token-by-token to the SSE client.
 """
 from __future__ import annotations
 
@@ -12,7 +18,7 @@ import logging
 import re
 from collections.abc import AsyncIterator
 
-from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +26,26 @@ logger = logging.getLogger(__name__)
 DEFAULT_MAX_TOKENS = 2048
 
 
-def make_client(api_key: str, base_url: str | None = None) -> AsyncAnthropic:
-    """Build an AsyncAnthropic client from a per-request BYOK key.
+def make_client(api_key: str, base_url: str | None = None) -> AsyncOpenAI:
+    """Build an AsyncOpenAI client from a per-request BYOK key.
 
-    `base_url` lets a user point at a proxy or self-hosted Anthropic-compatible
-    endpoint without code changes."""
+    `base_url` lets the user point the client at any OpenAI-compatible
+    endpoint (DeepSeek, Qwen, Doubao, OpenRouter, a self-hosted proxy, …).
+    When omitted the SDK defaults to the official OpenAI API.
+    """
     if not api_key or not api_key.strip():
-        raise ValueError("Anthropic API key is required (X-Anthropic-Key header).")
-    kwargs: dict = {"api_key": api_key}
+        raise ValueError("API key is required (X-API-Key header).")
+    kwargs: dict = {"api_key": api_key.strip()}
     if base_url and base_url.strip():
         kwargs["base_url"] = base_url.strip()
-    return AsyncAnthropic(**kwargs)
+    return AsyncOpenAI(**kwargs)
+
+
+def _messages(system: str, user: str) -> list[dict]:
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]
 
 
 async def complete_text(
@@ -44,13 +59,13 @@ async def complete_text(
 ) -> str:
     """Single-shot text completion. Returns the assistant text."""
     client = make_client(api_key, base_url=base_url)
-    response = await client.messages.create(
+    response = await client.chat.completions.create(
         model=model,
         max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+        messages=_messages(system, user),
     )
-    return "".join(b.text for b in response.content if b.type == "text").strip()
+    content = response.choices[0].message.content or ""
+    return content.strip()
 
 
 async def complete_json(
@@ -94,15 +109,19 @@ async def stream_text(
 ) -> AsyncIterator[str]:
     """Async generator yielding text deltas as the model writes them."""
     client = make_client(api_key, base_url=base_url)
-    async with client.messages.stream(
+    stream = await client.chat.completions.create(
         model=model,
         max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
-    ) as stream:
-        async for text in stream.text_stream:
-            if text:
-                yield text
+        messages=_messages(system, user),
+        stream=True,
+    )
+    async for chunk in stream:
+        if not chunk.choices:
+            continue
+        delta = chunk.choices[0].delta
+        text = getattr(delta, "content", None)
+        if text:
+            yield text
 
 
 _FENCE_RE = re.compile(r"^```(?:json)?\s*\n?(.*?)\n?```\s*$", re.DOTALL | re.IGNORECASE)

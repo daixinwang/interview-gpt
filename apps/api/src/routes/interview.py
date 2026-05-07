@@ -1,8 +1,11 @@
 """Interview HTTP + SSE endpoints.
 
 Conventions:
-- BYOK: every endpoint that calls Claude requires the `X-Anthropic-Key`
-  header. The key is never logged, never persisted, never echoed back.
+- BYOK: every endpoint that calls an LLM requires the `X-API-Key` header.
+  The key is never logged, never persisted, never echoed back. The backend
+  speaks the OpenAI Chat Completions protocol, so the key works against
+  any OpenAI-compatible provider (OpenAI, DeepSeek, Qwen, Doubao, OpenRouter,
+  Ollama, etc.) by pairing it with `base_url` at /start.
 - The streaming endpoint uses `EventSourceResponse` so the browser sees
   proper `event:` / `data:` framing.
 
@@ -40,18 +43,18 @@ def _resolve_api_key(header_value: str | None) -> str:
     """Prefer the per-request header; fall back to the optional server-side
     key from settings (handy for local dev). Raise 400 if neither set."""
     key = (header_value or "").strip()
-    if not key and settings.anthropic_api_key:
-        key = settings.anthropic_api_key
+    if not key and settings.llm_api_key:
+        key = settings.llm_api_key
     if not key:
         raise HTTPException(
             status_code=400,
-            detail="Anthropic API key required. Send X-Anthropic-Key header.",
+            detail="API key required. Send X-API-Key header.",
         )
     return key
 
 
 def _resolve_model(request_model: str | None) -> str:
-    return request_model or settings.anthropic_model
+    return request_model or settings.default_model
 
 
 @router.post("/start", response_model=StartResponse)
@@ -112,10 +115,10 @@ async def _sse_turn_events(
 async def stream(
     session_id: str,
     request: Request,
-    x_anthropic_key: str | None = Header(default=None, alias="X-Anthropic-Key"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     language: str = "zh",
 ):
-    api_key = _resolve_api_key(x_anthropic_key)
+    api_key = _resolve_api_key(x_api_key)
     try:
         state = await session_store.get(session_id)
     except KeyError as err:
@@ -156,10 +159,10 @@ async def answer(session_id: str, req: AnswerRequest) -> dict:
 async def finish(
     session_id: str,
     request: Request,
-    x_anthropic_key: str | None = Header(default=None, alias="X-Anthropic-Key"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     language: str = "zh",
 ):
-    api_key = _resolve_api_key(x_anthropic_key)
+    api_key = _resolve_api_key(x_api_key)
     try:
         state = await session_store.get(session_id)
     except KeyError as err:

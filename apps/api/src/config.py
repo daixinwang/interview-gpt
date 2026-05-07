@@ -19,9 +19,11 @@ class Settings(BaseSettings):
     # data/seeds directory at the repo root (two levels up from apps/api).
     seeds_dir: str = "../../data/seeds"
     embedding_model: str | None = None
-    anthropic_model: str = "claude-sonnet-4-6"
+    # Default model used when the client doesn't pin one. Pick a small,
+    # fast, widely-available default; users override per-session via the UI.
+    default_model: str = "gpt-4o-mini"
     # Optional server-side fallback. Leave empty to enforce BYOK.
-    anthropic_api_key: str | None = None
+    llm_api_key: str | None = None
 
     @property
     def cors_origins_list(self) -> list[str]:

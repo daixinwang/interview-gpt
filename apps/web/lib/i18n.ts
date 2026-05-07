@@ -20,11 +20,13 @@ const ZH: Dict = {
   "home.resume.uploaded": "已加载",
   "home.section.apikey": "API Key",
   "home.apikey.help":
-    "你的 key 仅保存在浏览器 localStorage,每次请求通过 X-Anthropic-Key 头发到后端,永不持久化。",
+    "支持任意 OpenAI 兼容服务商（OpenAI / Claude / DeepSeek / 通义 / 豆包 / 智谱 / Kimi / OpenRouter / Ollama 等）。Key 仅保存在浏览器 localStorage，每次请求通过 X-API-Key 头发到后端，永不持久化。",
   "home.advanced.toggle": "高级选项",
+  "home.section.provider": "服务商",
   "home.section.model": "模型",
-  "home.section.baseurl": "Base URL（可选）",
-  "home.placeholder.baseurl": "https://api.anthropic.com（默认）",
+  "home.section.baseurl": "Base URL",
+  "home.placeholder.baseurl": "https://api.openai.com/v1",
+  "home.baseurl.help": "选择左侧服务商会自动填入；也可以手动改成你的代理或自部署地址。",
   "home.placeholder.jd": "我们正在招聘高级前端工程师，需要……",
   "home.placeholder.resume": "5 年 React 经验，在 X 公司主导设计系统建设……",
   "home.placeholder.apikey": "sk-ant-...",
@@ -75,11 +77,14 @@ const EN: Dict = {
   "home.resume.uploaded": "Loaded",
   "home.section.apikey": "API Key",
   "home.apikey.help":
-    "Your key is stored only in browser localStorage and sent via X-Anthropic-Key per request — never persisted server-side.",
+    "Works with any OpenAI-compatible provider (OpenAI, Claude, DeepSeek, Qwen, Doubao, GLM, Kimi, OpenRouter, Ollama, …). Your key is stored only in browser localStorage and sent via X-API-Key per request — never persisted server-side.",
   "home.advanced.toggle": "Advanced",
+  "home.section.provider": "Provider",
   "home.section.model": "Model",
-  "home.section.baseurl": "Base URL (optional)",
-  "home.placeholder.baseurl": "https://api.anthropic.com (default)",
+  "home.section.baseurl": "Base URL",
+  "home.placeholder.baseurl": "https://api.openai.com/v1",
+  "home.baseurl.help":
+    "Picking a provider auto-fills this; edit to point at your proxy or self-host.",
   "home.placeholder.jd":
     "We are hiring a Senior Frontend Engineer. Required: deep React expertise...",
   "home.placeholder.resume":

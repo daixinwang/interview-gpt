@@ -7,7 +7,7 @@ there's an answered-but-unscored round, so this runs once per answer.
 from __future__ import annotations
 
 from src.agents import prompts
-from src.llm.anthropic_client import complete_json
+from src.llm.llm_client import complete_json
 from src.schemas import InterviewState, Round
 
 

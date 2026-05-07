@@ -55,7 +55,7 @@ def test_stream_requires_byok_header():
     # Without header — should bail out before any LLM call.
     r = client.get(f"/api/interview/stream/{sid}")
     assert r.status_code == 400
-    assert "X-Anthropic-Key" in r.text
+    assert "X-API-Key" in r.text
 
 
 def test_finish_requires_byok_header():
