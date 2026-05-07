@@ -242,7 +242,7 @@ def test_interviewer_prompt_uses_stage_instruction_for_primary():
         ],
         language="zh",
     )
-    assert "project deep-dive" in user
+    assert "PROJECT DEEP-DIVE" in user
     assert "system-design" in user
 
 
