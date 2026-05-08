@@ -99,6 +99,17 @@ Open http://localhost:3000, paste your Anthropic API key when prompted, pick a r
 
 The Vercel/Railway buttons at the top of this README do most of the wiring for you.
 
+### Session Store
+
+Interview state lives in a pluggable session store, picked via `SESSION_STORE_BACKEND`:
+
+| Mode | When to use | Trade-off |
+|---|---|---|
+| `memory` (default) | `pnpm dev`, smoke tests, quick demos | Zero deps, but every backend restart drops in-flight interviews |
+| `redis` | Any real deployment | Survives `uvicorn --reload` and redeploys; needs a Redis instance |
+
+`docker compose up` defaults to `redis` and ships a Redis service with AOF persistence. For self-hosted production, set `SESSION_STORE_BACKEND=redis` and point `SESSION_REDIS_URL` at your instance. `SESSION_TTL_SECONDS` controls how long an idle session lives (sliding window — refreshed on every read/write).
+
 ## 🧪 Tests
 
 ```bash

@@ -98,6 +98,17 @@ pnpm --filter @interview-gpt/web dev
 
 README 顶部的 Vercel/Railway 按钮已经预填好大部分参数。
 
+### 会话存储（Session Store）
+
+会话状态通过 `SESSION_STORE_BACKEND` 选择后端：
+
+| 模式 | 适用场景 | 取舍 |
+|---|---|---|
+| `memory`（默认） | `pnpm dev` / 冒烟 / 快速演示 | 零依赖，但后端一重启就丢全部进行中的面试 |
+| `redis` | 任何真实部署 | 可挺过 `uvicorn --reload` 与 redeploy；需要一个 Redis 实例 |
+
+`docker compose up` 默认走 `redis`，并自带一个开了 AOF 的 Redis 服务。自托管生产环境建议设置 `SESSION_STORE_BACKEND=redis` 并用 `SESSION_REDIS_URL` 指向你的 Redis。`SESSION_TTL_SECONDS` 控制空闲会话存活时长（滑动窗口，每次读写都会续期）。
+
 ## 🧪 测试
 
 ```bash

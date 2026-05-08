@@ -1,4 +1,14 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: interviewgpt-redis
+    # AOF persistence so an in-flight interview survives `docker compose
+    # restart redis`. Tune to your durability needs.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -10,9 +20,18 @@ services:
       - CORS_ORIGINS=http://localhost:3000
       - CHROMA_PERSIST_DIR=/app/chroma_data
       - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+      # Compose default → Redis-backed sessions so `docker compose restart
+      # api` (or a redeploy) doesn't drop in-flight interviews. Override to
+      # `memory` for ephemeral / smoke-test runs.
+      - SESSION_STORE_BACKEND=${SESSION_STORE_BACKEND:-redis}
+      - SESSION_REDIS_URL=${SESSION_REDIS_URL:-redis://redis:6379/0}
+      - SESSION_TTL_SECONDS=${SESSION_TTL_SECONDS:-3600}
+    depends_on:
+      - redis
     volumes:
       - chroma_data:/app/chroma_data
     restart: unless-stopped
 
 volumes:
   chroma_data:
+  redis_data:
