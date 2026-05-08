@@ -37,8 +37,10 @@ export const PROVIDERS: ProviderPreset[] = [
   },
   {
     id: "anthropic",
+    // Anthropic exposes an OpenAI-compatible shim at /v1/openai (not /v1,
+    // which is the native Messages API and rejects /chat/completions).
     label: "Anthropic",
-    baseUrl: "https://api.anthropic.com/v1",
+    baseUrl: "https://api.anthropic.com/v1/openai",
     models: [
       { id: "claude-opus-4-6", label: "Claude Opus 4.6" },
       { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
@@ -105,6 +107,24 @@ export const PROVIDERS: ProviderPreset[] = [
       { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 Flash (free)" },
       { id: "deepseek/deepseek-chat", label: "DeepSeek V3" },
       { id: "meta-llama/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
+    ],
+  },
+  {
+    id: "zenmux",
+    // ZenMux is an aggregator (similar to OpenRouter): one key, many models.
+    // Model slugs are `<provider>/<name>` and can be copied from zenmux.ai's
+    // model detail page. The list below is just a starter set — users can
+    // type any slug into the model field.
+    label: "ZenMux",
+    baseUrl: "https://zenmux.ai/api/v1",
+    models: [
+      { id: "openai/gpt-4o-mini", label: "GPT-4o mini" },
+      { id: "openai/gpt-5", label: "GPT-5" },
+      { id: "anthropic/claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
+      { id: "anthropic/claude-3.5-haiku", label: "Claude 3.5 Haiku" },
+      { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+      { id: "deepseek/deepseek-chat", label: "DeepSeek V3" },
+      { id: "qwen/qwen3-max", label: "Qwen3 Max" },
     ],
   },
   {
