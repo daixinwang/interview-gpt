@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { Check, Copy, SkipForward } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lang, t } from "@/lib/i18n";
 
@@ -16,10 +20,24 @@ interface Props {
     text: string;
     streaming?: boolean;
   };
+  /**
+   * When provided, an extra "skip" action is shown in the hover row.
+   * Only the latest interviewer question (one awaiting an answer) should
+   * receive this — the parent decides which bubble qualifies.
+   */
+  onSkip?: () => void;
   lang: Lang;
 }
 
-export function ChatBubble({ role, text, meta, streaming, reference, lang }: Props) {
+export function ChatBubble({
+  role,
+  text,
+  meta,
+  streaming,
+  reference,
+  onSkip,
+  lang,
+}: Props) {
   const isInt = role === "interviewer";
   const stageLabel =
     meta?.stage && t(lang, `interview.stage.${meta.stage}`) !== `interview.stage.${meta.stage}`
@@ -28,10 +46,26 @@ export function ChatBubble({ role, text, meta, streaming, reference, lang }: Pro
   const isSkipped = !isInt && !!meta?.skipped;
   const displayText = isSkipped ? t(lang, "interview.skipped.label") : text;
 
+  const [copied, setCopied] = useState(false);
+  const onCopy = async () => {
+    if (!displayText) return;
+    try {
+      await navigator.clipboard.writeText(displayText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API can fail in non-secure contexts; ignore silently.
+    }
+  };
+
+  // Hide the action row while a bubble is still streaming (text isn't final
+  // yet) or for the "skipped" candidate placeholder (no useful text to copy).
+  const showActions = !streaming && !isSkipped && !!displayText;
+
   return (
     <div
       className={cn(
-        "flex w-full flex-col gap-2",
+        "group flex w-full flex-col gap-1.5",
         isInt ? "items-start" : "items-end",
       )}
     >
@@ -65,6 +99,50 @@ export function ChatBubble({ role, text, meta, streaming, reference, lang }: Pro
           </div>
         )}
       </div>
+
+      {showActions && (
+        <div
+          className={cn(
+            "flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100",
+            isInt ? "self-start" : "self-end",
+          )}
+        >
+          <span className="group/tip relative">
+            <button
+              type="button"
+              onClick={onCopy}
+              aria-label={copied ? t(lang, "interview.copied") : t(lang, "interview.copy")}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+            <span className={cn(
+              "pointer-events-none absolute top-full z-20 mt-1 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] text-background opacity-0 shadow-md transition-opacity group-hover/tip:opacity-100",
+              isInt ? "left-0" : "right-0",
+            )}>
+              {copied ? t(lang, "interview.copied") : t(lang, "interview.copy")}
+            </span>
+          </span>
+          {onSkip && (
+            <span className="group/tip relative">
+              <button
+                type="button"
+                onClick={onSkip}
+                aria-label={t(lang, "interview.skip.aria")}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <SkipForward className="h-3.5 w-3.5" />
+              </button>
+              <span className={cn(
+              "pointer-events-none absolute top-full z-20 mt-1 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] text-background opacity-0 shadow-md transition-opacity group-hover/tip:opacity-100",
+              isInt ? "left-0" : "right-0",
+            )}>
+                {t(lang, "interview.skip")}
+              </span>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Reference answer (only relevant on candidate side after a skip). */}
       {!isInt && reference && (

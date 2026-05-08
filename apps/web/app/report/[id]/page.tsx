@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
-import { LangToggle } from "@/components/lang-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Lang, t } from "@/lib/i18n";
+import { useLang } from "@/components/app-shell";
+import { t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import { ApiError, fetchState, streamSse, sseUrls } from "@/lib/api-client";
 
@@ -17,10 +16,7 @@ interface PageProps {
 
 export default function ReportPage({ params }: PageProps) {
   const router = useRouter();
-  const search = useSearchParams();
-  const [lang, setLang] = useState<Lang>(
-    (search.get("lang") as Lang) || storage.getLanguage(),
-  );
+  const { lang } = useLang();
   const sid = params.id;
 
   const [report, setReport] = useState<string>("");
@@ -49,7 +45,7 @@ export default function ReportPage({ params }: PageProps) {
         }
         setStreaming(true);
         let buf = "";
-        await streamSse(sseUrls.finish(sid), apiKey, (ev) => {
+        await streamSse(sseUrls.finish(sid, lang), apiKey, (ev) => {
           const d = ev.data || {};
           if (ev.event === "delta" || d.type === "delta") {
             buf += d.text;
@@ -84,11 +80,6 @@ export default function ReportPage({ params }: PageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sid]);
 
-  const onLangChange = (l: Lang) => {
-    setLang(l);
-    storage.setLanguage(l);
-  };
-
   const onCopy = async () => {
     await navigator.clipboard.writeText(report);
     setCopied(true);
@@ -106,58 +97,50 @@ export default function ReportPage({ params }: PageProps) {
   };
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-6 py-8">
-      <header className="flex items-center justify-between border-b border-border pb-3">
-        <button
-          onClick={() => router.push("/")}
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          ← {t(lang, "report.back")}
-        </button>
-        <h1 className="text-lg font-semibold">{t(lang, "report.title")}</h1>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <LangToggle lang={lang} onChange={onLangChange} />
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        <div className="flex items-center justify-between pb-3">
+          <h1 className="text-lg font-semibold">{t(lang, "report.title")}</h1>
         </div>
-      </header>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onDownload}
-          disabled={!report || streaming}
-        >
-          {t(lang, "report.download.md")}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onCopy}
-          disabled={!report || streaming}
-        >
-          {copied ? t(lang, "report.copied") : t(lang, "report.copy")}
-        </Button>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onDownload}
+            disabled={!report || streaming}
+          >
+            {t(lang, "report.download.md")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onCopy}
+            disabled={!report || streaming}
+          >
+            {copied ? t(lang, "report.copied") : t(lang, "report.copy")}
+          </Button>
+        </div>
+
+        {error && (
+          <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <article className="prose prose-sm sm:prose-base mt-6 max-w-none">
+          {report ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{report}</ReactMarkdown>
+          ) : (
+            <p className="text-muted-foreground">
+              {t(lang, "report.generating")}
+            </p>
+          )}
+          {streaming && report && (
+            <span className="ml-0.5 animate-pulse">▍</span>
+          )}
+        </article>
       </div>
-
-      {error && (
-        <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
-      <article className="prose prose-sm sm:prose-base mt-6 max-w-none">
-        {report ? (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{report}</ReactMarkdown>
-        ) : (
-          <p className="text-muted-foreground">
-            {t(lang, "report.generating")}
-          </p>
-        )}
-        {streaming && report && (
-          <span className="ml-0.5 animate-pulse">▍</span>
-        )}
-      </article>
-    </main>
+    </div>
   );
 }

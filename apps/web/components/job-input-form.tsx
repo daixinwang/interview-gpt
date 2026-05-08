@@ -2,13 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { JOBS, jobLabel } from "@/lib/jobs";
-import { PROVIDERS } from "@/lib/models";
 import { Lang, t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import { startInterview } from "@/lib/api-client";
@@ -20,49 +19,171 @@ interface Props {
 
 export function JobInputForm({ lang }: Props) {
   const router = useRouter();
-  const [jobId, setJobId] = useState("frontend");
-  const [customTitle, setCustomTitle] = useState("");
+
+  // Job selection. `jobId` is one of the preset ids (frontend / backend / …)
+  // OR the literal "custom"; in the latter case `selectedCustomTitle` picks
+  // which entry of `customJobs` is active. Splitting these lets the chip
+  // row render presets + multiple custom entries side-by-side without
+  // overloading a single string id.
+  const [jobId, setJobId] = useState<string>("frontend");
+  const [customJobs, setCustomJobs] = useState<string[]>([]);
+  const [selectedCustomTitle, setSelectedCustomTitle] = useState<string>("");
+  // Preset ids the user has dismissed; persisted so deletions stick across
+  // reloads. Always derived against `JOBS` at render time.
+  const [hiddenPresets, setHiddenPresets] = useState<string[]>([]);
+  // Inline-input state for the "+ Add" affordance.
+  const [adding, setAdding] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const draftInputRef = useRef<HTMLInputElement>(null);
+
   const [jd, setJd] = useState("");
   const [resume, setResume] = useState("");
   const [resumeFile, setResumeFile] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [providerId, setProviderId] = useState<string>(PROVIDERS[0].id);
-  const [model, setModel] = useState("");
-  const [baseUrl, setBaseUrl] = useState("");
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-
-  const provider =
-    PROVIDERS.find((p) => p.id === providerId) || PROVIDERS[0];
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // One-shot hydrate from localStorage. Persistence below is wired into
+  // each onChange handler directly (rather than via [state] effects) so the
+  // write path is obvious and HMR can't desync the two halves.
+  // (API key / provider / model / base URL are owned by SettingsMenu and
+  // read straight from storage at submit time — no local state needed.)
   useEffect(() => {
-    setApiKey(storage.getApiKey());
-    const savedModel = storage.getModel();
-    const savedBase = storage.getBaseUrl();
-    setModel(savedModel);
-    setBaseUrl(savedBase);
-    // Try to infer the provider from the saved base URL so the dropdown
-    // lands on the user's actual provider rather than the default.
-    if (savedBase) {
-      const match = PROVIDERS.find((p) => p.baseUrl === savedBase);
-      if (match) setProviderId(match.id);
+    // Custom-job migration: previous schema stored a single title; fold it
+    // into the new array if the array is empty, then drop the legacy key.
+    let savedCustom = storage.getCustomJobs();
+    const legacy = storage.getLegacyCustomJobTitle();
+    if (legacy && !savedCustom.includes(legacy)) {
+      savedCustom = [legacy, ...savedCustom];
+      storage.setCustomJobs(savedCustom);
     }
-    // First-time visitors get the OpenAI default base URL pre-filled —
-    // less friction for the most common case.
-    if (!savedBase) setBaseUrl(PROVIDERS[0].baseUrl);
-    if (!savedModel) setModel(PROVIDERS[0].models[0].id);
+    if (legacy) storage.clearLegacyCustomJobTitle();
+    setCustomJobs(savedCustom);
+
+    const savedHidden = storage.getHiddenPresetJobs();
+    setHiddenPresets(savedHidden);
+    const visiblePresets = JOBS.filter((j) => !savedHidden.includes(j.id));
+
+    const savedJobId = storage.getJobId();
+    const savedSelected = storage.getSelectedCustomJobTitle();
+    if (savedJobId === "custom" && savedSelected && savedCustom.includes(savedSelected)) {
+      setJobId("custom");
+      setSelectedCustomTitle(savedSelected);
+    } else if (savedJobId && visiblePresets.some((j) => j.id === savedJobId)) {
+      setJobId(savedJobId);
+    } else if (visiblePresets.length > 0) {
+      // Saved id was hidden / missing — fall back to the first visible preset.
+      setJobId(visiblePresets[0].id);
+    } else if (savedCustom.length > 0) {
+      setJobId("custom");
+      setSelectedCustomTitle(savedCustom[0]);
+    } else {
+      setJobId("");
+    }
+
+    setJd(storage.getJd());
+    setResume(storage.getResume());
   }, []);
 
-  const onProviderChange = (id: string) => {
-    setProviderId(id);
-    const next = PROVIDERS.find((p) => p.id === id);
-    if (!next) return;
-    setBaseUrl(next.baseUrl);
-    // Snap the model to the provider's first option to keep things consistent.
-    setModel(next.models[0].id);
+  // --- Job chip handlers ---------------------------------------------------
+
+  const pickPreset = (id: string) => {
+    setJobId(id);
+    setSelectedCustomTitle("");
+    storage.setJobId(id);
+    storage.setSelectedCustomJobTitle("");
+  };
+
+  const pickCustom = (title: string) => {
+    setJobId("custom");
+    setSelectedCustomTitle(title);
+    storage.setJobId("custom");
+    storage.setSelectedCustomJobTitle(title);
+  };
+
+  // Pick the next valid selection after a chip removal. Prefers any remaining
+  // visible preset, then the first surviving custom title, else clears.
+  const fallbackSelection = (
+    nextHidden: string[],
+    nextCustom: string[],
+  ): { id: string; custom: string } => {
+    const firstPreset = JOBS.find((j) => !nextHidden.includes(j.id));
+    if (firstPreset) return { id: firstPreset.id, custom: "" };
+    if (nextCustom.length > 0) return { id: "custom", custom: nextCustom[0] };
+    return { id: "", custom: "" };
+  };
+
+  const removeCustom = (title: string) => {
+    const next = customJobs.filter((t) => t !== title);
+    setCustomJobs(next);
+    storage.setCustomJobs(next);
+    if (jobId === "custom" && selectedCustomTitle === title) {
+      const { id, custom } = fallbackSelection(hiddenPresets, next);
+      setJobId(id);
+      setSelectedCustomTitle(custom);
+      storage.setJobId(id);
+      storage.setSelectedCustomJobTitle(custom);
+    }
+  };
+
+  const removePreset = (id: string) => {
+    const nextHidden = [...hiddenPresets, id];
+    setHiddenPresets(nextHidden);
+    storage.setHiddenPresetJobs(nextHidden);
+    if (jobId === id) {
+      const { id: nextId, custom } = fallbackSelection(nextHidden, customJobs);
+      setJobId(nextId);
+      setSelectedCustomTitle(custom);
+      storage.setJobId(nextId);
+      storage.setSelectedCustomJobTitle(custom);
+    }
+  };
+
+  const startAdding = () => {
+    setError(null);
+    setDraftTitle("");
+    setAdding(true);
+    // Defer focus until the input has rendered.
+    requestAnimationFrame(() => draftInputRef.current?.focus());
+  };
+
+  const commitAdding = () => {
+    const title = draftTitle.trim();
+    if (!title) {
+      setAdding(false);
+      return;
+    }
+    if (customJobs.includes(title)) {
+      setError(t(lang, "home.error.job.duplicate"));
+      // Auto-select the existing entry so the click still feels useful.
+      pickCustom(title);
+      setAdding(false);
+      return;
+    }
+    const next = [...customJobs, title];
+    setCustomJobs(next);
+    storage.setCustomJobs(next);
+    pickCustom(title);
+    setAdding(false);
+  };
+
+  const cancelAdding = () => {
+    setAdding(false);
+    setDraftTitle("");
+  };
+
+  // --- Resume / JD persistence --------------------------------------------
+
+  const onJdChange = (value: string) => {
+    setJd(value);
+    storage.setJd(value);
+  };
+
+  const onResumeChange = (value: string) => {
+    setResume(value);
+    storage.setResume(value);
+    if (resumeFile) setResumeFile(null);
   };
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,12 +202,12 @@ export function JobInputForm({ lang }: Props) {
         );
       }
       setResume(text);
+      storage.setResume(text);
       setResumeFile(file.name);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setParsing(false);
-      // Reset input so re-uploading the same file still fires onChange.
       if (fileRef.current) fileRef.current.value = "";
     }
   };
@@ -94,26 +215,28 @@ export function JobInputForm({ lang }: Props) {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    // API key / model / base URL live in the SettingsMenu now; pull whatever
+    // the user last saved at submit time.
+    const apiKey = storage.getApiKey();
+    const model = storage.getModel();
+    const baseUrl = storage.getBaseUrl();
     if (!apiKey.trim()) {
       setError(t(lang, "interview.error.apikey"));
       return;
     }
     if (!jd.trim() || !resume.trim()) return;
     const isCustom = jobId === "custom";
-    if (isCustom && !customTitle.trim()) {
+    if (isCustom && !selectedCustomTitle.trim()) {
       setError(t(lang, "home.error.job.custom"));
       return;
     }
 
-    storage.setApiKey(apiKey.trim());
-    storage.setModel(model.trim());
-    storage.setBaseUrl(baseUrl.trim());
     setSubmitting(true);
     try {
       const job = JOBS.find((j) => j.id === jobId);
       const resolvedId = isCustom ? "custom" : job!.id;
       const resolvedTitle = isCustom
-        ? customTitle.trim()
+        ? selectedCustomTitle.trim()
         : jobLabel(job!, lang);
       const { session_id } = await startInterview({
         jobId: resolvedId,
@@ -137,45 +260,97 @@ export function JobInputForm({ lang }: Props) {
     }
   };
 
+  // Shared chip class so preset / custom / add buttons stay visually consistent.
+  const chipClass = (active: boolean) =>
+    `rounded-full border px-4 py-1.5 text-sm transition-colors ${
+      active
+        ? "border-primary bg-primary text-primary-foreground"
+        : "border-border bg-background hover:bg-accent"
+    }`;
+
+  // Deletable chip wrapper. The × sits to the *right* of the chip (not inside)
+  // so the chip itself keeps symmetric padding; we only reserve space when
+  // hovered to keep the row tidy at rest.
+  const DeletableChip = ({
+    label,
+    active,
+    onPick,
+    onRemove,
+  }: {
+    label: string;
+    active: boolean;
+    onPick: () => void;
+    onRemove: () => void;
+  }) => (
+    <span className="group inline-flex items-center">
+      <button type="button" onClick={onPick} className={chipClass(active)}>
+        {label}
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        aria-label={t(lang, "home.aria.job.remove")}
+        className="ml-0 inline-flex h-4 w-4 items-center justify-center overflow-hidden rounded-full border border-border bg-background text-muted-foreground opacity-0 transition-all hover:bg-destructive hover:text-destructive-foreground group-hover:ml-1.5 group-hover:opacity-100"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label>{t(lang, "home.section.job")}</Label>
-        <div className="flex flex-wrap gap-2">
-          {JOBS.map((j) => (
+        <div className="flex flex-wrap items-center gap-2">
+          {JOBS.filter((j) => !hiddenPresets.includes(j.id)).map((j) => (
+            <DeletableChip
+              key={j.id}
+              label={jobLabel(j, lang)}
+              active={jobId === j.id}
+              onPick={() => pickPreset(j.id)}
+              onRemove={() => removePreset(j.id)}
+            />
+          ))}
+          {customJobs.map((title) => (
+            <DeletableChip
+              key={title}
+              label={title}
+              active={jobId === "custom" && selectedCustomTitle === title}
+              onPick={() => pickCustom(title)}
+              onRemove={() => removeCustom(title)}
+            />
+          ))}
+          {adding ? (
+            <Input
+              ref={draftInputRef}
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitAdding();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  cancelAdding();
+                }
+              }}
+              onBlur={commitAdding}
+              placeholder={t(lang, "home.placeholder.job.custom")}
+              className="h-8 w-64 rounded-full px-4 text-sm"
+            />
+          ) : (
             <button
               type="button"
-              key={j.id}
-              onClick={() => setJobId(j.id)}
-              className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                jobId === j.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background hover:bg-accent"
-              }`}
+              onClick={startAdding}
+              className={chipClass(false)}
             >
-              {jobLabel(j, lang)}
+              {t(lang, "home.section.job.add")}
             </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => setJobId("custom")}
-            className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-              jobId === "custom"
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background hover:bg-accent"
-            }`}
-          >
-            {t(lang, "home.section.job.custom")}
-          </button>
+          )}
         </div>
-        {jobId === "custom" && (
-          <Input
-            value={customTitle}
-            onChange={(e) => setCustomTitle(e.target.value)}
-            placeholder={t(lang, "home.placeholder.job.custom")}
-            autoFocus
-          />
-        )}
       </div>
 
       <div className="space-y-2">
@@ -184,7 +359,7 @@ export function JobInputForm({ lang }: Props) {
           id="jd"
           rows={6}
           value={jd}
-          onChange={(e) => setJd(e.target.value)}
+          onChange={(e) => onJdChange(e.target.value)}
           placeholder={t(lang, "home.placeholder.jd")}
           required
         />
@@ -223,110 +398,13 @@ export function JobInputForm({ lang }: Props) {
           id="resume"
           rows={5}
           value={resume}
-          onChange={(e) => {
-            setResume(e.target.value);
-            // If user manually edits, drop the file label.
-            if (resumeFile) setResumeFile(null);
-          }}
+          onChange={(e) => onResumeChange(e.target.value)}
           placeholder={t(lang, "home.placeholder.resume")}
           required
         />
         <p className="text-xs text-muted-foreground">
           {t(lang, "home.resume.upload.hint")}
         </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="apikey">{t(lang, "home.section.apikey")}</Label>
-        <Input
-          id="apikey"
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder={t(lang, "home.placeholder.apikey")}
-          autoComplete="off"
-        />
-        <p className="text-xs text-muted-foreground">
-          {t(lang, "home.apikey.help")}
-        </p>
-      </div>
-
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => setAdvancedOpen((v) => !v)}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {advancedOpen ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-          {t(lang, "home.advanced.toggle")}
-        </button>
-
-        {advancedOpen && (
-          <div className="space-y-4 rounded-md border border-border bg-muted/30 p-4">
-            <div className="space-y-2">
-              <Label>{t(lang, "home.section.provider")}</Label>
-              <div className="flex flex-wrap gap-2">
-                {PROVIDERS.map((p) => (
-                  <button
-                    type="button"
-                    key={p.id}
-                    onClick={() => onProviderChange(p.id)}
-                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                      providerId === p.id
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-background hover:bg-accent"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="model">{t(lang, "home.section.model")}</Label>
-                <select
-                  id="model"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  {provider.models.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label}
-                    </option>
-                  ))}
-                  {/* Allow saved-but-unlisted custom IDs to remain selected. */}
-                  {model && !provider.models.some((m) => m.id === model) && (
-                    <option value={model}>{model}</option>
-                  )}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="baseurl">
-                  {t(lang, "home.section.baseurl")}
-                </Label>
-                <Input
-                  id="baseurl"
-                  type="url"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder={t(lang, "home.placeholder.baseurl")}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t(lang, "home.baseurl.help")}
-            </p>
-          </div>
-        )}
       </div>
 
       {error && (

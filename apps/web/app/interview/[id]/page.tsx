@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { ArrowUp } from "lucide-react";
 import { ChatBubble } from "@/components/chat-bubble";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { LangToggle } from "@/components/lang-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Lang, t } from "@/lib/i18n";
+import { useLang } from "@/components/app-shell";
+import { t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
 import {
   fetchState,
@@ -31,10 +30,7 @@ interface UiRound extends RoundDTO {
 
 export default function InterviewPage({ params }: PageProps) {
   const router = useRouter();
-  const search = useSearchParams();
-  const [lang, setLang] = useState<Lang>(
-    (search.get("lang") as Lang) || storage.getLanguage(),
-  );
+  const { lang } = useLang();
   const sid = params.id;
 
   const [rounds, setRounds] = useState<UiRound[]>([]);
@@ -46,7 +42,16 @@ export default function InterviewPage({ params }: PageProps) {
   const [answerText, setAnswerText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const startedRef = useRef(false);
+
+  // Auto-grow textarea height to fit content (GPT-style pill input).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 192)}px`;
+  }, [answerText]);
 
   const apiKey = typeof window !== "undefined" ? storage.getApiKey() : "";
 
@@ -321,11 +326,6 @@ export default function InterviewPage({ params }: PageProps) {
     router.push(`/report/${sid}?lang=${lang}`);
   };
 
-  const onLangChange = (l: Lang) => {
-    setLang(l);
-    storage.setLanguage(l);
-  };
-
   const onKey = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
@@ -338,31 +338,21 @@ export default function InterviewPage({ params }: PageProps) {
   const canSend = awaitingAnswer && !thinking && !evaluating;
 
   return (
-    <main className="mx-auto flex h-screen max-w-3xl flex-col px-4 py-6">
-      <header className="flex items-center justify-between border-b border-border pb-3">
-        <button
-          onClick={() => router.push("/")}
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          ← {t(lang, "report.back")}
-        </button>
-        <div className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {t(lang, `interview.stage.${stage}`)}
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <LangToggle lang={lang} onChange={onLangChange} />
-        </div>
-      </header>
-
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto py-6">
-        {rounds.map((r, i) => (
+    <div className="mx-auto flex h-full max-w-3xl flex-col px-4 py-4">
+      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto pb-6">
+        {rounds.map((r, i) => {
+          // Only the latest interviewer turn that's awaiting an answer gets
+          // an inline skip action; older bubbles are read-only.
+          const isLatestAwaiting =
+            i === rounds.length - 1 && r.answer === null && !r.streaming;
+          return (
           <div key={i} className="space-y-3">
             <ChatBubble
               role="interviewer"
               text={r.question || (r.streaming ? "" : "…")}
               meta={{ stage: r.stage, isFollowup: r.is_followup }}
               streaming={r.streaming}
+              onSkip={isLatestAwaiting ? onSkip : undefined}
               lang={lang}
             />
             {r.answer && (
@@ -382,7 +372,8 @@ export default function InterviewPage({ params }: PageProps) {
               />
             )}
           </div>
-        ))}
+          );
+        })}
         {thinking && !lastRound?.streaming && (
           <div className="text-sm text-muted-foreground">
             {t(lang, "interview.thinking")}
@@ -402,7 +393,7 @@ export default function InterviewPage({ params }: PageProps) {
       )}
 
       {reportReady || completed ? (
-        <div className="border-t border-border pt-4">
+        <div className="pt-4">
           <div className="mb-2 text-sm text-muted-foreground">
             {t(lang, "interview.report_ready")}
           </div>
@@ -411,33 +402,35 @@ export default function InterviewPage({ params }: PageProps) {
           </Button>
         </div>
       ) : (
-        <div className="border-t border-border pt-4">
-          <Textarea
-            value={answerText}
-            onChange={(e) => setAnswerText(e.target.value)}
-            onKeyDown={onKey}
-            placeholder={t(lang, "interview.placeholder")}
-            rows={3}
-            disabled={!canSend}
-          />
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              onClick={onSkip}
+        <div className="pt-4">
+          <div
+            className={`flex items-end gap-1.5 rounded-3xl border border-border bg-background px-3 py-1.5 shadow-sm transition-opacity ${
+              canSend ? "" : "opacity-60"
+            }`}
+          >
+            <textarea
+              ref={textareaRef}
+              value={answerText}
+              onChange={(e) => setAnswerText(e.target.value)}
+              onKeyDown={onKey}
+              placeholder={t(lang, "interview.placeholder")}
+              rows={1}
               disabled={!canSend}
-              aria-label={t(lang, "interview.skip.aria")}
-            >
-              {t(lang, "interview.skip")}
-            </Button>
-            <Button
+              className="max-h-48 min-h-[2.25rem] flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-5 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+            />
+            <button
+              type="button"
               onClick={onSendAnswer}
               disabled={!canSend || !answerText.trim()}
+              aria-label={t(lang, "interview.send")}
+              title={t(lang, "interview.send")}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-30"
             >
-              {t(lang, "interview.send")}
-            </Button>
+              <ArrowUp className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
