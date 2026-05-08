@@ -3,9 +3,10 @@
  *
  * pdfjs-dist is large (~1MB) and only needed when the user actually
  * uploads a PDF, so we load it lazily via dynamic import. The worker
- * is pulled from cdnjs at the matching version — this avoids the
- * webpack worker-bundling rabbit hole inside Next.js App Router and
- * is also cache-friendly across InterviewGPT deployments.
+ * is pulled from jsdelivr (which mirrors npm directly) at the matching
+ * version — this avoids the webpack worker-bundling rabbit hole inside
+ * Next.js App Router. cdnjs was tried first but does not host the .mjs
+ * worker for pdfjs-dist v5.
  */
 
 type PdfJs = typeof import("pdfjs-dist");
@@ -15,7 +16,7 @@ let _pdfjs: PdfJs | null = null;
 async function loadPdfJs(): Promise<PdfJs> {
   if (_pdfjs) return _pdfjs;
   const pdfjs = (await import("pdfjs-dist")) as PdfJs;
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
   _pdfjs = pdfjs;
   return pdfjs;
 }
