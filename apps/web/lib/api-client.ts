@@ -87,11 +87,19 @@ export async function postAnswer(
   return r.json();
 }
 
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export async function fetchState(
   sessionId: string,
 ): Promise<InterviewStateDTO> {
   const r = await fetch(`${API_URL}/api/interview/state/${sessionId}`);
-  if (!r.ok) throw new Error(`state failed: ${r.status}`);
+  if (!r.ok) throw new ApiError(r.status, `state failed: ${r.status}`);
   return r.json();
 }
 

@@ -9,7 +9,7 @@ import { LangToggle } from "@/components/lang-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Lang, t } from "@/lib/i18n";
 import { storage } from "@/lib/storage";
-import { fetchState, streamSse, sseUrls } from "@/lib/api-client";
+import { ApiError, fetchState, streamSse, sseUrls } from "@/lib/api-client";
 
 interface PageProps {
   params: { id: string };
@@ -66,6 +66,12 @@ export default function ReportPage({ params }: PageProps) {
           storage.upsertSession({ ...meta, completed: true });
         }
       } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          storage.removeSession(sid);
+          setError(t(lang, "interview.error.session_expired"));
+          router.replace(`/?lang=${lang}`);
+          return;
+        }
         setError(err instanceof Error ? err.message : String(err));
       } finally {
         setStreaming(false);

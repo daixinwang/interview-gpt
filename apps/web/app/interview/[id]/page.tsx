@@ -14,6 +14,7 @@ import {
   postAnswer,
   streamSse,
   sseUrls,
+  ApiError,
   type RoundDTO,
 } from "@/lib/api-client";
 
@@ -100,6 +101,15 @@ export default function InterviewPage({ params }: PageProps) {
           await runTurn();
         }
       } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          // Backend lost / never had this session (in-memory store after a
+          // restart, or TTL expired). Clean up the dead localStorage entry
+          // and bounce back to home so the user isn't stuck on a red banner.
+          storage.removeSession(sid);
+          setError(t(lang, "interview.error.session_expired"));
+          router.replace(`/?lang=${lang}`);
+          return;
+        }
         setError(err instanceof Error ? err.message : String(err));
       }
     };
