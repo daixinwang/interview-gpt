@@ -52,6 +52,11 @@ const ZH: Dict = {
   "interview.stage.closing": "结束",
   "interview.placeholder": "用语音或文字回答（Cmd/Ctrl+Enter 发送）",
   "interview.send": "发送回答",
+  "interview.skip": "我不知道，跳过",
+  "interview.skip.aria": "跳过当前问题并查看参考答案",
+  "interview.skipped.label": "（跳过）",
+  "interview.reference.label": "参考答案",
+  "interview.reference.streaming": "正在生成参考答案…",
   "interview.finish": "生成报告",
   "interview.error.apikey": "需要先配置 API Key",
   "interview.error.empty_stream":
@@ -119,6 +124,11 @@ const EN: Dict = {
   "interview.stage.closing": "Closing",
   "interview.placeholder": "Type your answer (Cmd/Ctrl+Enter to send)",
   "interview.send": "Send Answer",
+  "interview.skip": "I don't know — skip",
+  "interview.skip.aria": "Skip this question and show a reference answer",
+  "interview.skipped.label": "(skipped)",
+  "interview.reference.label": "Reference Answer",
+  "interview.reference.streaming": "Generating reference answer…",
   "interview.finish": "Generate Report",
   "interview.error.apikey": "Please set your API Key first",
   "interview.error.empty_stream":

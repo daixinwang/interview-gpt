@@ -24,6 +24,8 @@ interface PageProps {
 interface UiRound extends RoundDTO {
   // Local-only: tracks streaming state for the latest interviewer turn.
   streaming?: boolean;
+  // Local-only: true while the reference answer is still being streamed.
+  referenceStreaming?: boolean;
 }
 
 export default function InterviewPage({ params }: PageProps) {
@@ -119,6 +121,8 @@ export default function InterviewPage({ params }: PageProps) {
     let buffer = "";
     let placeholderIdx = -1;
     let stageMeta: { stage: string; isFollowup: boolean } | null = null;
+    let referenceBuffer = "";
+    let referenceIdx = -1;
     let eventsReceived = 0;
 
     try {
@@ -139,6 +143,42 @@ export default function InterviewPage({ params }: PageProps) {
               i === d.round_index ? { ...r, score: d.score } : r,
             ),
           );
+        } else if (ev.event === "reference_start" || d.type === "reference_start") {
+          referenceBuffer = "";
+          referenceIdx = d.round_index;
+          setRounds((prev) =>
+            prev.map((r, i) =>
+              i === referenceIdx
+                ? {
+                    ...r,
+                    reference_answer: "",
+                    referenceStreaming: true,
+                  }
+                : r,
+            ),
+          );
+          setThinking(false);
+          scrollToBottom();
+        } else if (ev.event === "reference_delta" || d.type === "reference_delta") {
+          referenceBuffer += d.text;
+          setRounds((prev) =>
+            prev.map((r, i) =>
+              i === referenceIdx
+                ? { ...r, reference_answer: referenceBuffer }
+                : r,
+            ),
+          );
+          scrollToBottom();
+        } else if (ev.event === "reference_done" || d.type === "reference_done") {
+          setRounds((prev) =>
+            prev.map((r, i) =>
+              i === referenceIdx
+                ? { ...r, referenceStreaming: false }
+                : r,
+            ),
+          );
+          // Reset for the next question that's about to stream.
+          setThinking(true);
         } else if (ev.event === "stage" || d.type === "stage") {
           stageMeta = { stage: d.stage, isFollowup: !!d.is_followup };
           setStage(d.stage);
@@ -159,6 +199,8 @@ export default function InterviewPage({ params }: PageProps) {
                 weaknesses: [],
                 should_followup: false,
                 followup_hint: null,
+                skipped: false,
+                reference_answer: null,
                 streaming: true,
               } as UiRound,
             ];
@@ -166,6 +208,8 @@ export default function InterviewPage({ params }: PageProps) {
             return next;
           });
           setThinking(false);
+          // Reset question buffer for this new bubble.
+          buffer = "";
         } else if (ev.event === "delta" || d.type === "delta") {
           buffer += d.text;
           setRounds((prev) =>
@@ -231,6 +275,31 @@ export default function InterviewPage({ params }: PageProps) {
     }
   };
 
+  const onSkip = async () => {
+    if (thinking || evaluating) return;
+    setError(null);
+
+    // Optimistically mark the latest unanswered round as skipped.
+    setRounds((prev) => {
+      const copy = [...prev];
+      for (let i = copy.length - 1; i >= 0; i--) {
+        if (copy[i].answer === null) {
+          copy[i] = { ...copy[i], answer: "(skipped)", skipped: true };
+          break;
+        }
+      }
+      return copy;
+    });
+    scrollToBottom();
+
+    try {
+      await postAnswer(sid, "", true);
+      await runTurn();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const onGenerateReport = () => {
     persistSessionMeta(
       storage.listSessions().find((s) => s.sessionId === sid)?.jobTitle ||
@@ -289,8 +358,16 @@ export default function InterviewPage({ params }: PageProps) {
             {r.answer && (
               <ChatBubble
                 role="candidate"
-                text={r.answer}
-                meta={{ score: r.score }}
+                text={r.skipped ? t(lang, "interview.skipped.label") : r.answer}
+                meta={{ score: r.score, skipped: r.skipped }}
+                reference={
+                  r.skipped && (r.reference_answer !== null || r.referenceStreaming)
+                    ? {
+                        text: r.reference_answer || "",
+                        streaming: r.referenceStreaming,
+                      }
+                    : undefined
+                }
                 lang={lang}
               />
             )}
@@ -333,7 +410,15 @@ export default function InterviewPage({ params }: PageProps) {
             rows={3}
             disabled={!canSend}
           />
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              onClick={onSkip}
+              disabled={!canSend}
+              aria-label={t(lang, "interview.skip.aria")}
+            >
+              {t(lang, "interview.skip")}
+            </Button>
             <Button
               onClick={onSendAnswer}
               disabled={!canSend || !answerText.trim()}

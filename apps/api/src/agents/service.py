@@ -14,10 +14,14 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from src.agents import interviewer, reporter
+from src.agents import interviewer, reference, reporter
 from src.agents.evaluator import apply_evaluation, evaluate_round
 from src.agents.graph import next_decision
 from src.schemas import InterviewState, Round
+
+# Sentinel string written into Round.answer when the candidate skipped.
+# Reporter and history formatters look for it to render the skip clearly.
+SKIPPED_ANSWER_MARKER = "(skipped)"
 
 
 async def stream_next_turn(
@@ -31,13 +35,33 @@ async def stream_next_turn(
     Event shapes:
       {"type": "evaluating"}                              # before scoring last answer
       {"type": "evaluated", "round_index": int, "score": int}
+      {"type": "reference_start", "round_index": int}     # candidate skipped; reference incoming
+      {"type": "reference_delta", "text": str}            # streaming reference tokens
+      {"type": "reference_done", "round_index": int}
       {"type": "stage", "stage": str, "is_followup": bool}
       {"type": "delta", "text": str}                      # streaming question tokens
       {"type": "round_committed", "round_index": int}
       {"type": "report_ready"}                            # caller should hit /finish
       {"type": "done"}
     """
-    # 1. If there's an answered-but-unscored round, evaluate it first.
+    # 1a. If the latest round was skipped and has no reference answer yet,
+    # stream a reference answer for it. Skipped rounds are NOT evaluated —
+    # the candidate explicitly opted out of being scored on this question.
+    pending_skip = state.last_pending_skip()
+    if pending_skip is not None:
+        skip_idx = state.rounds.index(pending_skip)
+        yield {"type": "reference_start", "round_index": skip_idx}
+        buf: list[str] = []
+        async for chunk in reference.stream_reference_answer(
+            api_key=api_key, state=state, round_=pending_skip, language=language
+        ):
+            buf.append(chunk)
+            yield {"type": "reference_delta", "text": chunk}
+        pending_skip.reference_answer = "".join(buf).strip()
+        yield {"type": "reference_done", "round_index": skip_idx}
+        # Fall through to the orchestrator below to ask the next question.
+
+    # 1b. Otherwise, if there's an answered-but-unscored round, evaluate it first.
     pending = state.last_unevaluated_round()
     if pending is not None:
         yield {"type": "evaluating"}
@@ -136,3 +160,17 @@ def record_answer(state: InterviewState, answer: str) -> int:
             state.rounds[i].answer = answer.strip()
             return i
     raise ValueError("No outstanding question to answer")
+
+
+def record_skip(state: InterviewState) -> int:
+    """Mark the most recent unanswered round as skipped.
+    Returns the index of the round that was skipped.
+
+    Raises ValueError if there is no round awaiting an answer.
+    """
+    for i in range(len(state.rounds) - 1, -1, -1):
+        if state.rounds[i].answer is None:
+            state.rounds[i].answer = SKIPPED_ANSWER_MARKER
+            state.rounds[i].skipped = True
+            return i
+    raise ValueError("No outstanding question to skip")

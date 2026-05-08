@@ -97,7 +97,13 @@ async def _sse_turn_events(
             event_name = event.get("type", "delta")
             yield {"event": event_name, "data": json.dumps(event, ensure_ascii=False)}
             # Persist on lifecycle events.
-            if event_name in {"evaluated", "round_committed", "report_ready", "done"}:
+            if event_name in {
+                "evaluated",
+                "reference_done",
+                "round_committed",
+                "report_ready",
+                "done",
+            }:
                 await session_store.save(state)
     except HTTPException:
         raise
@@ -147,12 +153,15 @@ async def answer(session_id: str, req: AnswerRequest) -> dict:
         raise HTTPException(status_code=404, detail="session not found") from err
 
     try:
-        idx = service.record_answer(state, req.answer)
+        if req.skipped:
+            idx = service.record_skip(state)
+        else:
+            idx = service.record_answer(state, req.answer)
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err)) from err
 
     await session_store.save(state)
-    return {"ok": True, "round_index": idx}
+    return {"ok": True, "round_index": idx, "skipped": req.skipped}
 
 
 @router.post("/finish/{session_id}")

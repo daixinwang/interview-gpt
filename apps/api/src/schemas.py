@@ -26,6 +26,12 @@ class Round(BaseModel):
     should_followup: bool = False
     followup_hint: str | None = None
 
+    # Candidate skipped this question. We don't score skipped rounds; instead
+    # the interviewer agent generates a reference answer the candidate can
+    # study afterwards.
+    skipped: bool = False
+    reference_answer: str | None = None
+
 
 class StartRequest(BaseModel):
     job_id: str = Field(..., description="One of the IDs in jobs.json")
@@ -41,7 +47,10 @@ class StartResponse(BaseModel):
 
 
 class AnswerRequest(BaseModel):
-    answer: str
+    answer: str = ""
+    # When true, `answer` is ignored and the round is marked as skipped.
+    # The /stream endpoint then yields a reference answer instead of evaluating.
+    skipped: bool = False
 
 
 class TurnAction(BaseModel):
@@ -93,8 +102,16 @@ class InterviewState(BaseModel):
         )
 
     def last_unevaluated_round(self) -> Round | None:
-        """Most recent round that has an answer but no score yet."""
+        """Most recent round that has an answer but no score yet.
+        Skipped rounds are excluded — they get a reference answer instead of a score."""
         for r in reversed(self.rounds):
-            if r.answer is not None and r.score is None:
+            if r.answer is not None and r.score is None and not r.skipped:
+                return r
+        return None
+
+    def last_pending_skip(self) -> Round | None:
+        """Most recent skipped round that hasn't been given a reference answer yet."""
+        for r in reversed(self.rounds):
+            if r.skipped and r.reference_answer is None:
                 return r
         return None

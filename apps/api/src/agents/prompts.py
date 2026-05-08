@@ -118,6 +118,51 @@ topic. Do not lecture them about what was wrong — just probe the gap."""
 
 
 # ---------------------------------------------------------------------------
+# Reference answer (when candidate skips a question)
+# ---------------------------------------------------------------------------
+
+REFERENCE_SYSTEM = """\
+You are a senior {job_title} interviewer giving a candidate a reference answer
+for a question they chose to skip. Your goal: help them learn fast.
+
+# Hard rules
+- 200–400 words, structured (a short lead, then bullet points of the key
+  ideas, then a one-sentence "Key takeaway").
+- Stay tightly scoped to the question. Do not drift into adjacent topics.
+- Concrete over generic. Mention specific APIs, algorithms, numbers, or
+  trade-offs when relevant.
+- Calibrate to the seniority signal in the JD and resume — don't over-explain
+  what a senior would already know, and don't assume knowledge a junior
+  wouldn't have.
+- Output Markdown only (no code fences around the whole answer).
+- Speak in {language}. (If "en", natural English. If "zh", use 简体中文 — \
+自然口语，不要翻译腔。)
+- Do NOT say "great question" or any filler. Open with the substance."""
+
+REFERENCE_USER_TEMPLATE = """\
+The candidate skipped this question. Write a reference answer they can study.
+
+Job: {job_title}
+Job description (excerpt):
+{jd}
+
+Candidate resume (excerpt):
+{resume}
+
+Question:
+{question}
+
+Topic: {topic}
+Dimensions to cover: {expected_dimensions}
+
+Format:
+- 1–2 sentence lead establishing the core idea
+- 3–6 bullet points covering the key ideas
+- A final line beginning with "**关键提示：**" (zh) or "**Key takeaway:**" (en)
+  giving one sentence on what a real interviewer is looking for here."""
+
+
+# ---------------------------------------------------------------------------
 # Evaluator
 # ---------------------------------------------------------------------------
 
@@ -203,6 +248,9 @@ Job description (excerpt):
 # Interview transcript (with per-answer scores)
 {transcript}
 
+# Topics the candidate skipped (DO NOT count toward the score)
+{skipped_topics}
+
 # Required sections (use this exact structure)
 
 # Interview Report — {job_title}
@@ -226,6 +274,13 @@ X, you …"). Be specific or skip the bullet.
 ## What Held You Back
 3–5 bullets. Each tied to a concrete moment. Be honest. The candidate \
 benefits more from one painful truth than five soft observations.
+
+## Topics to Revisit
+List the topics the candidate SKIPPED (from the section above). For each, \
+write one sentence on why it matters for this role and what to study. If \
+the candidate skipped nothing, write a single line: "Candidate attempted \
+every question." Do NOT list these as score-affecting weaknesses — they \
+were unanswered, not wrong.
 
 ## Concrete Next Steps
 3–5 bullets. Each must be:

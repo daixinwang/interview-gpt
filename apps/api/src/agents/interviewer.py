@@ -33,7 +33,9 @@ def _format_history(state: InterviewState, max_rounds: int = 6) -> str:
     lines = ["Conversation so far:"]
     for i, r in enumerate(tail, start=1):
         lines.append(f"  Q{i} [{r.stage}]: {r.question}")
-        if r.answer:
+        if r.skipped:
+            lines.append(f"  A{i}: (candidate SKIPPED — move on to a different topic)")
+        elif r.answer:
             lines.append(f"  A{i}: {r.answer}")
         if r.score is not None:
             lines.append(f"     (evaluator score: {r.score}/10)")

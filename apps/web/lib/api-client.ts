@@ -31,6 +31,8 @@ export interface RoundDTO {
   weaknesses: string[];
   should_followup: boolean;
   followup_hint: string | null;
+  skipped: boolean;
+  reference_answer: string | null;
 }
 
 export interface InterviewStateDTO {
@@ -74,11 +76,12 @@ export async function startInterview(
 export async function postAnswer(
   sessionId: string,
   answer: string,
-): Promise<{ ok: boolean; round_index: number }> {
+  skipped = false,
+): Promise<{ ok: boolean; round_index: number; skipped: boolean }> {
   const r = await fetch(`${API_URL}/api/interview/answer/${sessionId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ answer }),
+    body: JSON.stringify({ answer: skipped ? "" : answer, skipped }),
   });
   if (!r.ok) throw new Error(`answer failed: ${r.status} ${await r.text()}`);
   return r.json();
