@@ -96,7 +96,15 @@ def get_graph() -> Any:
 
 
 def next_decision(state: InterviewState) -> dict:
-    """Run the compiled graph once to produce the next decision dict."""
-    graph = get_graph()
-    out = graph.invoke(state.model_dump())
-    return out.get("_decision") or {"action": "ask", "stage": state.stage}
+    """Produce the next decision dict.
+
+    LangGraph 1.x's ``StateGraph(dict)`` schema doesn't merge node returns
+    back into the final state the way 0.2.x did, so ``out["_decision"]``
+    silently disappeared and we fell through to a fallback ``{"action":
+    "ask", "stage": state.stage}`` — which forced the interviewer to keep
+    asking opening-stage questions even when the evaluator had requested
+    a follow-up. The graph here was always just a marker (the route layer
+    does the real streaming dispatch off ``action``), so we call the pure
+    orchestrator directly. Tests still cover this path end-to-end.
+    """
+    return decide_next(state)
