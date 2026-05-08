@@ -21,6 +21,7 @@ interface Props {
 export function JobInputForm({ lang }: Props) {
   const router = useRouter();
   const [jobId, setJobId] = useState("frontend");
+  const [customTitle, setCustomTitle] = useState("");
   const [jd, setJd] = useState("");
   const [resume, setResume] = useState("");
   const [resumeFile, setResumeFile] = useState<string | null>(null);
@@ -98,16 +99,25 @@ export function JobInputForm({ lang }: Props) {
       return;
     }
     if (!jd.trim() || !resume.trim()) return;
+    const isCustom = jobId === "custom";
+    if (isCustom && !customTitle.trim()) {
+      setError(t(lang, "home.error.job.custom"));
+      return;
+    }
 
     storage.setApiKey(apiKey.trim());
     storage.setModel(model.trim());
     storage.setBaseUrl(baseUrl.trim());
     setSubmitting(true);
     try {
-      const job = JOBS.find((j) => j.id === jobId)!;
+      const job = JOBS.find((j) => j.id === jobId);
+      const resolvedId = isCustom ? "custom" : job!.id;
+      const resolvedTitle = isCustom
+        ? customTitle.trim()
+        : jobLabel(job!, lang);
       const { session_id } = await startInterview({
-        jobId: job.id,
-        jobTitle: jobLabel(job, lang),
+        jobId: resolvedId,
+        jobTitle: resolvedTitle,
         jd: jd.trim(),
         resume: resume.trim(),
         model: model.trim() || undefined,
@@ -115,8 +125,8 @@ export function JobInputForm({ lang }: Props) {
       });
       storage.upsertSession({
         sessionId: session_id,
-        jobTitle: jobLabel(job, lang),
-        jobId: job.id,
+        jobTitle: resolvedTitle,
+        jobId: resolvedId,
         startedAt: Date.now(),
         completed: false,
       });
@@ -146,7 +156,26 @@ export function JobInputForm({ lang }: Props) {
               {jobLabel(j, lang)}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setJobId("custom")}
+            className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
+              jobId === "custom"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background hover:bg-accent"
+            }`}
+          >
+            {t(lang, "home.section.job.custom")}
+          </button>
         </div>
+        {jobId === "custom" && (
+          <Input
+            value={customTitle}
+            onChange={(e) => setCustomTitle(e.target.value)}
+            placeholder={t(lang, "home.placeholder.job.custom")}
+            autoFocus
+          />
+        )}
       </div>
 
       <div className="space-y-2">
