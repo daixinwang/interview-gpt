@@ -56,10 +56,24 @@ def _skipped_topics(state: InterviewState) -> str:
     return "\n".join(lines)
 
 
+def _language_directive(code: str) -> str:
+    """Expand a short language code into an unambiguous instruction.
+
+    The system prompt is otherwise English, so just substituting ``"zh"`` /
+    ``"en"`` into ``Write in {language}`` lets the model coast on its English
+    momentum and produce an English report even when zh was requested.
+    """
+    if code == "zh":
+        return "简体中文 (Simplified Chinese). 全文必须使用简体中文输出，不要混用英文段落。"
+    if code == "en":
+        return "English. The entire report MUST be in English."
+    return code
+
+
 def build_reporter_messages(
     state: InterviewState, *, language: str = "zh"
 ) -> tuple[str, str]:
-    system = prompts.REPORTER_SYSTEM.format(language=language)
+    system = prompts.REPORTER_SYSTEM.format(language=_language_directive(language))
     user = prompts.REPORTER_USER_TEMPLATE.format(
         job_title=state.job_title,
         jd=state.jd[:1500],

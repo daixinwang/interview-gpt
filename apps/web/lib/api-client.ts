@@ -174,5 +174,6 @@ function parseFrame(frame: string): SseEvent | null {
 
 export const sseUrls = {
   stream: (sid: string) => `${API_URL}/api/interview/stream/${sid}`,
-  finish: (sid: string) => `${API_URL}/api/interview/finish/${sid}`,
+  finish: (sid: string, lang: "zh" | "en" = "zh") =>
+    `${API_URL}/api/interview/finish/${sid}?language=${lang}`,
 };
