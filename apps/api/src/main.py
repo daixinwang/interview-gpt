@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from src.rag.seeder import seed_collection
 from src.routes import health, interview
+from src.state import session_store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -22,7 +23,12 @@ async def lifespan(app: FastAPI):
         logger.info("ChromaDB seeding finished. Inserted/upserted %d documents.", inserted)
     except Exception:
         logger.exception("ChromaDB seeding failed; the app will still start.")
-    yield
+    await session_store.init()
+    logger.info("Session store backend: %s", settings.session_store_backend)
+    try:
+        yield
+    finally:
+        await session_store.shutdown()
 
 
 app = FastAPI(

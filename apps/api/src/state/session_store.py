@@ -1,79 +1,64 @@
-"""In-memory session store.
+"""Session store façade.
 
-Single-process MVP only. Swap for Redis later by re-implementing this
-module with the same shape. Sessions auto-expire after `TTL_SECONDS` of
-inactivity.
+Thin delegate layer that picks the actual backend at import time based on
+`settings.session_store_backend`:
+
+- ``memory`` (default): in-process dict, sessions die on restart. Zero
+  external dependencies — perfect for ``pnpm dev`` zero-config.
+- ``redis``: durable, survives ``uvicorn --reload`` and redeploys, supports
+  multi-replica deployments down the road.
+
+Both backends expose the same async surface: ``init / shutdown / create /
+get / save / delete / lock_for``. Callers (``routes/interview.py``,
+``agents/service.py``, …) import this module — they do not pick a backend.
 """
 from __future__ import annotations
 
 import asyncio
-import time
-import uuid
-from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
-from src.schemas import InterviewState
+from src.config import settings
 
-TTL_SECONDS = 60 * 60  # 1 hour idle
+from . import _memory_backend
 
-
-@dataclass
-class _Entry:
-    state: InterviewState
-    last_touch: float = field(default_factory=time.time)
-    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+if TYPE_CHECKING:
+    from src.schemas import InterviewState
 
 
-_store: dict[str, _Entry] = {}
-_global_lock = asyncio.Lock()
+def _backend():
+    """Resolve the active backend. Looked up lazily so tests can flip the
+    setting at runtime without re-importing the module."""
+    if settings.session_store_backend == "redis":
+        from . import _redis_backend  # local import: avoids hard dep when unused
+        return _redis_backend
+    return _memory_backend
 
 
-async def create(state_kwargs: dict) -> InterviewState:
-    """Create a new session. Generates the session_id."""
-    sid = uuid.uuid4().hex
-    state_kwargs = {**state_kwargs, "session_id": sid}
-    state = InterviewState(**state_kwargs)
-    async with _global_lock:
-        _store[sid] = _Entry(state=state)
-        _gc_locked()
-    return state
+async def init() -> None:
+    """Called once on app startup (FastAPI lifespan)."""
+    await _backend().init()
 
 
-async def get(session_id: str) -> InterviewState:
-    """Fetch a session, refresh TTL. Raises KeyError if missing/expired."""
-    async with _global_lock:
-        entry = _store.get(session_id)
-        if entry is None:
-            raise KeyError(session_id)
-        entry.last_touch = time.time()
-        return entry.state
+async def shutdown() -> None:
+    """Called once on app shutdown (FastAPI lifespan)."""
+    await _backend().shutdown()
+
+
+async def create(state_kwargs: dict) -> "InterviewState":
+    return await _backend().create(state_kwargs)
+
+
+async def get(session_id: str) -> "InterviewState":
+    return await _backend().get(session_id)
 
 
 async def lock_for(session_id: str) -> asyncio.Lock:
-    """Per-session lock so SSE turn handlers don't trample each other."""
-    async with _global_lock:
-        entry = _store.get(session_id)
-        if entry is None:
-            raise KeyError(session_id)
-        return entry.lock
+    return await _backend().lock_for(session_id)
 
 
-async def save(state: InterviewState) -> None:
-    async with _global_lock:
-        entry = _store.get(state.session_id)
-        if entry is None:
-            raise KeyError(state.session_id)
-        entry.state = state
-        entry.last_touch = time.time()
+async def save(state: "InterviewState") -> None:
+    await _backend().save(state)
 
 
 async def delete(session_id: str) -> None:
-    async with _global_lock:
-        _store.pop(session_id, None)
-
-
-def _gc_locked() -> None:
-    """Caller must hold `_global_lock`."""
-    cutoff = time.time() - TTL_SECONDS
-    expired = [sid for sid, e in _store.items() if e.last_touch < cutoff]
-    for sid in expired:
-        _store.pop(sid, None)
+    await _backend().delete(session_id)

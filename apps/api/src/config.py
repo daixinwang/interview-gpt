@@ -1,6 +1,8 @@
 """Application configuration loaded from environment variables."""
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +26,12 @@ class Settings(BaseSettings):
     default_model: str = "gpt-4o-mini"
     # Optional server-side fallback. Leave empty to enforce BYOK.
     llm_api_key: str | None = None
+
+    # Session store. "memory" is process-local (lost on restart); "redis"
+    # persists state so reloads / redeploys don't drop in-progress interviews.
+    session_store_backend: Literal["memory", "redis"] = "memory"
+    session_redis_url: str = "redis://localhost:6379/0"
+    session_ttl_seconds: int = 60 * 60  # 1 hour idle
 
     @property
     def cors_origins_list(self) -> list[str]:
