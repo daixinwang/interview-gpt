@@ -54,6 +54,8 @@ const ZH: Dict = {
   "interview.send": "发送回答",
   "interview.finish": "生成报告",
   "interview.error.apikey": "需要先配置 API Key",
+  "interview.error.empty_stream":
+    "面试官没有返回任何内容。请检查 API Key、Base URL 与模型是否匹配（打开浏览器 DevTools 的 Network/Console 可看到详细原因）。",
   "interview.report_ready": "面试已完成，点击生成报告",
 
   "report.title": "面试评估报告",
@@ -119,6 +121,8 @@ const EN: Dict = {
   "interview.send": "Send Answer",
   "interview.finish": "Generate Report",
   "interview.error.apikey": "Please set your API Key first",
+  "interview.error.empty_stream":
+    "Interviewer returned no content. Verify your API Key, Base URL and model are compatible (the browser DevTools Network/Console tabs will show the exact reason).",
   "interview.report_ready":
     "Interview complete. Click to generate the report.",
 

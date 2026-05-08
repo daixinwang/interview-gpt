@@ -119,10 +119,16 @@ export default function InterviewPage({ params }: PageProps) {
     let buffer = "";
     let placeholderIdx = -1;
     let stageMeta: { stage: string; isFollowup: boolean } | null = null;
+    let eventsReceived = 0;
 
     try {
       await streamSse(sseUrls.stream(sid), apiKey, (ev) => {
         const d = ev.data || {};
+        eventsReceived += 1;
+        // Surface raw frames in DevTools — helps users diagnose silent SSE issues
+        // (e.g., wrong base_url or model returning empty deltas).
+        // eslint-disable-next-line no-console
+        console.debug("[interview SSE]", ev.event, ev.data);
         if (ev.event === "evaluating" || d.type === "evaluating") {
           setEvaluating(true);
         } else if (ev.event === "evaluated" || d.type === "evaluated") {
@@ -183,6 +189,13 @@ export default function InterviewPage({ params }: PageProps) {
           setError(d.message || "stream error");
         }
       });
+      if (eventsReceived === 0) {
+        // Backend closed the stream without sending any frames — usually means
+        // the request was rejected before reaching our generator (proxy, CORS,
+        // or sse-starlette short-circuit). Surface it instead of silently
+        // freezing the UI.
+        setError(t(lang, "interview.error.empty_stream"));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

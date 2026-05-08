@@ -116,12 +116,11 @@ export async function streamSse(
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    // SSE frames are separated by a blank line.
+  // SSE frames are separated by a blank line, but the line ending depends on
+  // the server: sse-starlette uses CRLF (`\r\n\r\n`), classic implementations
+  // use LF (`\n\n`). We normalise to LF so downstream parsing only needs to
+  // handle one shape.
+  const flushFrames = () => {
     let idx: number;
     while ((idx = buffer.indexOf("\n\n")) !== -1) {
       const frame = buffer.slice(0, idx);
@@ -129,6 +128,18 @@ export async function streamSse(
       const parsed = parseFrame(frame);
       if (parsed) onEvent(parsed);
     }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+    flushFrames();
+  }
+  // Drain any trailing frame that didn't end with a blank line before close.
+  if (buffer.trim()) {
+    const parsed = parseFrame(buffer);
+    if (parsed) onEvent(parsed);
   }
 }
 
