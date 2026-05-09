@@ -2,9 +2,9 @@
 
 # 🎯 InterviewGPT
 
-**有人格的 AI 面试官 —— 你的求职模拟面试陪练。**
+**AI 面试官 —— 会追问、会挖坑、会给你结构化反馈报告。**
 
-一个会追问、会质疑、会挖坑的多 Agent AI 面试官，给你结构化评估报告。基于 Claude 构建。
+多 Agent AI 模拟面试陪练，基于 FastAPI + LangGraph 后端与 Next.js 前端。支持接入任何 OpenAI 兼容的 LLM 服务商，自带 API Key 即可使用。
 
 简体中文 · [English](./README.md)
 
@@ -25,10 +25,18 @@
 **核心差异化**
 
 - 🎭 **真实面试官人格** —— 直接、有压力、答得空就追问
-- 🎯 **岗位精准** —— 粘贴 JD，按岗位栈检索题库
+- 🎯 **岗位精准** —— 粘贴 JD，按岗位栈检索题库；可增删预设岗位，或自定义角色
+- 🌐 **任意 OpenAI 兼容服务商** —— OpenAI、Anthropic、DeepSeek、智谱、Kimi、豆包、OpenRouter、Ollama 等均可接入
 - 🤖 **多 Agent 架构（LangGraph）** —— Orchestrator → Interviewer → Evaluator → Reporter
-- 📊 **结构化反馈** —— 技术深度 · 表达逻辑 · 项目主理感 · 临场推理，附可执行下一步
+- 📊 **中英双语结构化反馈** —— 报告语言跟随 UI 设置，涵盖技术深度 · 表达逻辑 · 项目主理感 · 临场推理，附可执行下一步
 - 🔒 **BYOK + 零数据留存** —— API Key 仅存于你的浏览器，服务端永不持久化
+
+## 🖥 界面亮点
+
+- **ChatGPT 风格布局** —— 左侧持久侧边栏展示面试历史；点击任意历史记录可继续面试或查看报告
+- **设置下拉菜单** —— 点击顶栏 "InterviewGPT" 标题即可配置 API Key、服务商、模型、Base URL；设置跨页持久保存
+- **岗位 Chip 管理** —— 点击选中，悬浮显示 × 可删除，"+ 添加" 创建自定义岗位
+- **面试对话** —— 自动撑高的胶囊输入框 + 圆形发送按钮；悬浮到消息气泡可复制内容（最新提问额外显示跳过按钮）
 
 ## 🎬 工作原理
 
@@ -39,18 +47,18 @@
 └─────────────────┘     │  Orchestrator  →  Interviewer        │
         ▲               │       ↑              │               │
         │               │       │              ▼               │
-        │               │  Evaluator  ←   (候选人回答)         │
+        │               │  Evaluator  ←   （候选人回答）        │
         │               │                                      │
-        │               │  Reporter（最终 Markdown 报告）      │
+        │               │  Reporter（最终 Markdown 报告）       │
         │               └──────────────────────────────────────┘
         │                              │             │
         │                              ▼             ▼
-        │                         ChromaDB     Claude 4.6 Sonnet
-        │                         （题库）       （BYOK 头）
+        │                         ChromaDB     任意 OpenAI 兼容 LLM
+        │                         （题库）        （BYOK）
         └──────────────── Markdown 报告 ◄────────────┘
 ```
 
-**Orchestrator** 是纯 Python 状态机，决定下一步（提问 / 追问 / 评估 / 出报告）。**Interviewer** 把问题流式吐到浏览器。**Evaluator** 给每个回答打分并标出值得追问的弱点。**Reporter** 在面试结束时生成最终 Markdown 报告。
+**Orchestrator** 是纯 Python 状态机，决定下一步（提问 / 追问 / 评估 / 出报告）。**Interviewer** 把问题流式吐到浏览器。**Evaluator** 给每个回答打分并标出值得追问的弱点。**Reporter** 在面试结束时，用你当前 UI 语言生成最终 Markdown 报告。
 
 ## 🛠 技术栈
 
@@ -58,15 +66,15 @@
 |---|---|---|
 | 前端 | Next.js 14 · TypeScript · Tailwind · shadcn/ui | App Router 友好支持流式，shadcn 不锁框架 |
 | 后端 | Python 3.11 · FastAPI · LangGraph | 异步成熟、依赖注入清爽、Agent 编排利器 |
-| LLM | Claude 4.6 Sonnet | 长上下文推理 + JSON 模式都顶 |
+| LLM | 任意 OpenAI 兼容服务商（Claude、GPT-4o、DeepSeek……） | BYOK —— 用户在设置下拉菜单中填入 Key 并选择模型 |
 | 向量库 | ChromaDB（嵌入式） | 零运维，跟 API 一个进程 |
 | 流式 | Server-Sent Events | 单向、比 WebSocket 简单、Serverless 友好 |
 | 认证 | 无（匿名） | 历史在 localStorage，不连 DB |
-| Secrets | `X-Anthropic-Key` 头部 BYOK | 不写日志、不入库 |
+| Secrets | `X-API-Key` 头部 BYOK | 不写日志、不入库 |
 
 ## 🚀 本地快速开始
 
-**前置条件：** Node 20+、pnpm 10+、Python 3.11+（推荐安装 [`uv`](https://docs.astral.sh/uv/) 自动管理 Python）、一个 Anthropic API Key。
+**前置条件：** Node 20+、pnpm 10+、Python 3.11+（推荐安装 [`uv`](https://docs.astral.sh/uv/) 自动管理 Python）。
 
 ```bash
 # 1. 克隆与安装
@@ -87,7 +95,7 @@ pnpm --filter @interview-gpt/web dev
 # → http://localhost:3000
 ```
 
-打开 http://localhost:3000，按提示粘入你的 Anthropic API Key，选岗位，粘贴 JD 和简历，开始。
+打开 http://localhost:3000，点击顶栏 **InterviewGPT** 标题打开设置下拉菜单，填入 API Key 并选择服务商与模型。然后选岗位，粘贴 JD 和简历，开始。
 
 ## 📦 部署
 
@@ -113,7 +121,7 @@ README 顶部的 Vercel/Railway 按钮已经预填好大部分参数。
 
 ```bash
 cd apps/api
-uv run pytest -v       # 27 个测试：agents / RAG / 路由
+uv run pytest -v       # agents / RAG / 路由 / Redis session store
 ```
 
 前端目前只有类型化 API 客户端，未加 Jest，欢迎 PR。
@@ -129,12 +137,12 @@ interview-gpt/
 │   └── shared-types/     前端共享 TS 类型
 ├── data/seeds/           手工题库（5 岗位 × 6 题）
 ├── scripts/              一次性的 Claude 题库扩写脚本
-└── docker-compose.yml    本地一键起服务
+└── docker-compose.yml    本地一键起服务（含 Redis）
 ```
 
 ## 🤝 贡献
 
-欢迎 Issue / PR——尤其是新增岗位题库、prompt 调优、UI 改进。改 Agent 图相关的请先开 issue 对齐设计。
+欢迎 Issue / PR —— 尤其是新增岗位题库、prompt 调优、UI 改进。改 Agent 图相关的请先开 issue 对齐设计。
 
 ## 📄 协议
 

@@ -2,9 +2,9 @@
 
 # 🎯 InterviewGPT
 
-**Your AI Mock Interviewer — with personality.**
+**Your AI Mock Interviewer — asks, probes, challenges, then gives you a structured report.**
 
-A multi-agent AI interview coach that asks, probes, challenges, and gives you a structured report. Built with Claude.
+A multi-agent AI interview coach built with FastAPI + LangGraph on the backend and Next.js on the frontend. Bring your own API key from any OpenAI-compatible provider.
 
 [简体中文](./README.zh-CN.md) · English
 
@@ -25,10 +25,18 @@ Most AI interview tools are polite chatbots that pat you on the back. **Intervie
 **What makes it different**
 
 - 🎭 **Real interviewer persona** — sharp, direct, follows up when you're vague
-- 🎯 **Role-aware** — paste a JD, get questions tuned to that exact stack
+- 🎯 **Role-aware** — paste a JD, get questions tuned to that exact stack; add or remove preset roles
+- 🌐 **Any OpenAI-compatible provider** — OpenAI, Anthropic, DeepSeek, Zhipu, Kimi, Doubao, OpenRouter, Ollama, and more
 - 🤖 **Multi-agent architecture (LangGraph)** — Orchestrator → Interviewer → Evaluator → Reporter
-- 📊 **Structured feedback** — technical depth · communication · project ownership · curiosity, with concrete next steps
+- 📊 **Bilingual structured feedback** — full zh/en report that matches your UI language, covering technical depth · communication · project ownership · curiosity
 - 🔒 **BYOK + zero data retention** — your API key stays in your browser, the server never persists it
+
+## 🖥 UI Highlights
+
+- **ChatGPT-style layout** — persistent sidebar with interview history; click any past session to continue or view its report
+- **Settings dropdown** — click the "InterviewGPT" title to configure API key, provider, model, and base URL; settings survive page reloads
+- **Inline role management** — click any role chip to select it; hover to reveal a × and remove it; use "+ Add" to create custom roles
+- **Interview chat** — auto-growing pill input with a circular send button; hover any bubble to reveal a copy button (and a skip button on the latest question)
 
 ## 🎬 How It Works
 
@@ -45,13 +53,13 @@ Most AI interview tools are polite chatbots that pat you on the back. **Intervie
         │               └──────────────────────────────────────┘
         │                              │             │
         │                              ▼             ▼
-        │                         ChromaDB     Claude 4.6 Sonnet
-        │                        (question      (BYOK header)
+        │                         ChromaDB     Any OpenAI-compat
+        │                        (question      LLM  (BYOK)
         │                          bank)
         └──────────────── Markdown report ◄──────────┘
 ```
 
-The **Orchestrator** is a pure-Python state machine that decides the next move (ask / follow-up / evaluate / report). The **Interviewer** streams a question back to the browser. The **Evaluator** scores each answer and flags weaknesses to probe. The **Reporter** writes the final Markdown report once the interview ends.
+The **Orchestrator** is a pure-Python state machine that decides the next move (ask / follow-up / evaluate / report). The **Interviewer** streams a question back to the browser. The **Evaluator** scores each answer and flags weaknesses to probe. The **Reporter** writes the final Markdown report in your UI language once the interview ends.
 
 ## 🛠 Tech Stack
 
@@ -59,15 +67,15 @@ The **Orchestrator** is a pure-Python state machine that decides the next move (
 |---|---|---|
 | Frontend | Next.js 14 · TypeScript · Tailwind · shadcn/ui | App Router for streamed pages, no extra UI framework lock-in |
 | Backend | Python 3.11 · FastAPI · LangGraph | Mature async, clean DI, LangGraph for agent orchestration |
-| LLM | Claude 4.6 Sonnet | Best-in-class long-context reasoning + JSON mode |
+| LLM | Any OpenAI-compatible provider (Claude, GPT-4o, DeepSeek, …) | BYOK — user supplies the key and picks the model in the settings dropdown |
 | Vector store | ChromaDB (embedded) | Zero-ops, ships with the API process |
 | Streaming | Server-Sent Events | Unidirectional, simpler than WebSocket, plays well with serverless |
 | Auth | None (anonymous) | localStorage holds session history; no DB |
-| Secrets | BYOK via `X-Anthropic-Key` header | Never logged, never persisted |
+| Secrets | BYOK via `X-API-Key` header | Never logged, never persisted |
 
 ## 🚀 Quick Start (Local)
 
-**Prerequisites:** Node 20+, pnpm 10+, Python 3.11+ (auto-managed via [`uv`](https://docs.astral.sh/uv/) if installed), an Anthropic API key.
+**Prerequisites:** Node 20+, pnpm 10+, Python 3.11+ (auto-managed via [`uv`](https://docs.astral.sh/uv/) if installed).
 
 ```bash
 # 1. Clone & install
@@ -88,7 +96,7 @@ pnpm --filter @interview-gpt/web dev
 # → http://localhost:3000
 ```
 
-Open http://localhost:3000, paste your Anthropic API key when prompted, pick a role, paste a JD + your resume, and start.
+Open http://localhost:3000, click **InterviewGPT** in the top bar to open the settings dropdown, enter your API key and choose a provider/model. Then pick a role, paste a JD + resume, and start.
 
 ## 📦 Deploy
 
@@ -114,7 +122,7 @@ Interview state lives in a pluggable session store, picked via `SESSION_STORE_BA
 
 ```bash
 cd apps/api
-uv run pytest -v       # 27 tests: agents, RAG, routes
+uv run pytest -v       # agents, RAG, routes, Redis session store
 ```
 
 The frontend has typed API clients but no Jest tests yet (PRs welcome).
@@ -130,7 +138,7 @@ interview-gpt/
 │   └── shared-types/     TS types shared by the web app
 ├── data/seeds/           Hand-curated question bank (5 roles × 6 questions)
 ├── scripts/              One-shot Claude-powered seed expander
-└── docker-compose.yml    Local one-command bring-up
+└── docker-compose.yml    Local one-command bring-up (with Redis)
 ```
 
 ## 🤝 Contributing
